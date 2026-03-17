@@ -18,7 +18,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.supabase.co", pathname: "/**" },
       { protocol: "https", hostname: "supabase.co", pathname: "/**" },
       { protocol: "https", hostname: "upload.wikimedia.org", pathname: "/**" },
+      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
     ],
+  },
+  typescript: {
+    ignoreBuildErrors: false,
   },
 };
 
