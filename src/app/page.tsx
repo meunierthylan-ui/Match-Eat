@@ -204,6 +204,11 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
     async function fetchRestaurants() {
+      if (!supabase) {
+        setRestaurants([]);
+        setRestaurantsLoading(false);
+        return;
+      }
       const { data, error } = await supabase.from("restaurants").select("*");
       if (cancelled) return;
       if (error) {
