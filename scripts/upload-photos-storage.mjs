@@ -26,6 +26,23 @@ function parseEnvFile(content) {
 
 const TARGET_RESTAURANT_NAME = process.argv[2]?.trim() ?? "";
 
+/** Restaurants sans photos en base (tableau vide, null, ou chaîne '{}' côté legacy). */
+function needsPhotosUpload(value) {
+  if (value == null) return true;
+  if (typeof value === "string") {
+    const t = value.trim();
+    return t === "" || t === "{}";
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return true;
+    const hasUrl = value.some(
+      (src) => typeof src === "string" && src.trim().length > 0,
+    );
+    return !hasUrl;
+  }
+  return false;
+}
+
 function sleep(ms) {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 }
@@ -111,12 +128,24 @@ async function main() {
     throw new Error(`Erreur lecture restaurants: ${readError.message}`);
   }
 
-  const restaurantsToProcess = TARGET_RESTAURANT_NAME
-    ? restaurants.filter((r) => r.name === TARGET_RESTAURANT_NAME)
-    : restaurants;
+  const withoutPhotos = restaurants.filter((r) => needsPhotosUpload(r.photos));
 
-  console.log(`📦 ${restaurantsToProcess.length} restaurants trouvés pour traitement.`);
-  console.log(`🛠️ Re-upload forcé sur la sélection courante.`);
+  let restaurantsToProcess = withoutPhotos;
+  if (TARGET_RESTAURANT_NAME) {
+    restaurantsToProcess = withoutPhotos.filter(
+      (r) => r.name === TARGET_RESTAURANT_NAME,
+    );
+  }
+
+  console.log(
+    `📦 ${restaurants.length} restaurants en base — ${withoutPhotos.length} sans photos — ${restaurantsToProcess.length} à traiter.`,
+  );
+  console.log(`🛠️ Upload photos (Google Place Details → Storage) sur cette sélection.`);
+
+  if (restaurantsToProcess.length === 0) {
+    console.log("\n✅ Rien à faire (aucun restaurant sans photos dans la sélection).");
+    return;
+  }
 
   let okCount = 0;
   let failCount = 0;
