@@ -40,6 +40,22 @@ async function fetchRestaurants({ supabaseUrl, supabaseKey }) {
   return res.json();
 }
 
+async function fetchRestaurantById({ supabaseUrl, supabaseKey, id }) {
+  const url = `${supabaseUrl}/rest/v1/restaurants?id=eq.${id}&select=id,name,photos`;
+  const res = await fetch(url, {
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+    },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Erreur lecture restaurant ${id} (${res.status}): ${body}`);
+  }
+  const rows = await res.json();
+  return rows?.[0] ?? null;
+}
+
 async function searchPlace({ apiKey, name }) {
   const query = encodeURIComponent(`${name} Paris`);
   const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${apiKey}`;
@@ -116,14 +132,14 @@ async function resolveAtLeastTwoPhotoUrls({ apiKey, name }) {
 }
 
 async function updateRestaurantPhotos({ supabaseUrl, supabaseKey, id, photoUrls }) {
-  const url = `${supabaseUrl}/rest/v1/restaurants?id=eq.${id}`;
+  const url = `${supabaseUrl}/rest/v1/restaurants?id=eq.${id}&select=id,photos`;
   const res = await fetch(url, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       apikey: supabaseKey,
       Authorization: `Bearer ${supabaseKey}`,
-      Prefer: "return=minimal",
+      Prefer: "return=representation",
     },
     body: JSON.stringify({ photos: photoUrls }),
   });
@@ -131,6 +147,11 @@ async function updateRestaurantPhotos({ supabaseUrl, supabaseKey, id, photoUrls 
     const body = await res.text();
     throw new Error(`Erreur update Supabase (${res.status}): ${body}`);
   }
+  const rows = await res.json();
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error("0 ligne mise à jour (RLS/policies ou droits insuffisants)");
+  }
+  return rows[0];
 }
 
 async function main() {
@@ -140,19 +161,24 @@ async function main() {
 
   const googleApiKey = env.GOOGLE_PLACES_API_KEY;
   const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? env.SUPABASE_URL;
-  const supabaseKey =
-    env.SUPABASE_SERVICE_ROLE_KEY ??
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    env.SUPABASE_ANON_KEY;
+  const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? env.SUPABASE_ANON_KEY ?? "";
+  const readKey = supabaseServiceKey || supabaseAnonKey;
+  const writeKey = supabaseServiceKey;
 
   if (!googleApiKey) {
     throw new Error("GOOGLE_PLACES_API_KEY manquant dans .env.local");
   }
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Variables Supabase manquantes dans .env.local");
+  if (!supabaseUrl || !readKey) {
+    throw new Error("Variables Supabase de lecture manquantes dans .env.local");
+  }
+  if (!writeKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY manquante dans .env.local : requise pour appliquer les updates de photos de façon fiable."
+    );
   }
 
-  const restaurants = await fetchRestaurants({ supabaseUrl, supabaseKey });
+  const restaurants = await fetchRestaurants({ supabaseUrl, supabaseKey: readKey });
   console.log(`📦 ${restaurants.length} restaurants trouvés.`);
 
   let okCount = 0;
@@ -171,12 +197,33 @@ async function main() {
         throw new Error("moins de 2 photos disponibles même après fallback Place Details");
       }
 
-      await updateRestaurantPhotos({
+      console.log(`🖼️ ${name} - URLs trouvées:`);
+      photoUrls.forEach((u, i) => console.log(`   ${i + 1}. ${u}`));
+
+      const updated = await updateRestaurantPhotos({
         supabaseUrl,
-        supabaseKey,
+        supabaseKey: writeKey,
         id,
         photoUrls,
       });
+
+      const check = await fetchRestaurantById({
+        supabaseUrl,
+        supabaseKey: readKey,
+        id,
+      });
+
+      const storedPhotos = Array.isArray(check?.photos) ? check.photos : [];
+      const isApplied =
+        storedPhotos.length >= 2 &&
+        storedPhotos[0] === photoUrls[0] &&
+        storedPhotos[1] === photoUrls[1];
+      if (!isApplied) {
+        throw new Error(
+          `update non appliqué en base pour id=${id}. Photos en base: ${JSON.stringify(storedPhotos)}`
+        );
+      }
+
       console.log(`✅ ${name} - ${photoUrls.length} photos trouvées`);
       okCount += 1;
     } catch (error) {
