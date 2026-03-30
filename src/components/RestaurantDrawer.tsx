@@ -79,6 +79,15 @@ export default function RestaurantDrawer({
     (src): src is string => typeof src === "string" && src.trim().length > 0
   );
 
+  const googleRatingLabel =
+    restaurant && typeof restaurant.google_rating === "number"
+      ? restaurant.google_rating.toFixed(1)
+      : null;
+  const googleAvisLabel =
+    restaurant && typeof restaurant.google_rating_count === "number"
+      ? new Intl.NumberFormat("fr-FR").format(restaurant.google_rating_count)
+      : null;
+
   useEffect(() => {
     if (!isOpen) {
       setIsExpanded(false);
@@ -117,8 +126,22 @@ export default function RestaurantDrawer({
               {/* 1. Header : nom en très gros et gras */}
               <h2 className="text-3xl font-bold text-white">{restaurant.name}</h2>
 
-              {/* 2. Infos secondaires : cuisine • prix */}
-              <p className="text-sm text-white/60">{restaurant.cuisine.join(", ")} &#8226; {restaurant.price_range ?? "€€"}</p>
+              {/* 2. Infos secondaires : cuisine • prix · note Google */}
+              <p className="text-sm text-white/60">
+                {restaurant.cuisine.join(", ")} &#8226; {restaurant.price_range ?? "€€"}
+                {googleRatingLabel != null && (
+                  <>
+                    {" "}
+                    · ⭐ {googleRatingLabel}
+                    {googleAvisLabel != null && (
+                      <span className="text-white/50">
+                        {" "}
+                        ({googleAvisLabel} avis)
+                      </span>
+                    )}
+                  </>
+                )}
+              </p>
 
               {/* 3. Adresse interactive (badge style carte) */}
               <a

@@ -198,6 +198,9 @@ function loadSavedRestaurants(): RestaurantRow[] {
               ? item.tiktokUrl
               : null,
         is_solo_friendly: null,
+        google_place_id: null,
+        google_rating: null,
+        google_rating_count: null,
       } satisfies RestaurantRow;
     });
   } catch {
@@ -242,7 +245,9 @@ export default function Home() {
       }
       const { data, error } = await supabase
         .from("restaurants")
-        .select("id, name, cuisine, price_range, district, photos, is_solo_friendly");
+        .select(
+          "id, name, cuisine, price_range, district, photos, is_solo_friendly, google_rating, google_rating_count",
+        );
       if (cancelled) return;
       if (error) {
         console.error("Supabase restaurants:", error);

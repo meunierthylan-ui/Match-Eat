@@ -28,6 +28,8 @@ export function CardFace({ restaurant }: { restaurant: RestaurantRow }) {
   const cuisineLabel = Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(", ") : "";
   const priceLabel = restaurant.price_range ?? "€€";
   const addressLabel = restaurant.address ?? `${restaurant.name} Paris`;
+  const googleRating =
+    typeof restaurant.google_rating === "number" ? restaurant.google_rating.toFixed(1) : null;
   return (
     <div className="relative h-full w-full overflow-hidden bg-neutral-900">
       {image ? (
@@ -50,6 +52,12 @@ export function CardFace({ restaurant }: { restaurant: RestaurantRow }) {
         <h2 className="text-xl font-bold text-white drop-shadow-md">{restaurant.name}</h2>
         <p className="text-xs text-neutral-400">
           {cuisineLabel} &#8226; {priceLabel}
+          {googleRating != null && (
+            <span className="text-[10px] text-neutral-500">
+              {" "}
+              · ⭐ {googleRating}
+            </span>
+          )}
         </p>
       </div>
 

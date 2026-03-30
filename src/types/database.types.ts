@@ -10,4 +10,7 @@ export interface RestaurantRow {
   instagram_url: string | null;
   tiktok_url: string | null;
   is_solo_friendly: boolean | null;
+  google_place_id: string | null;
+  google_rating: number | null;
+  google_rating_count: number | null;
 }
