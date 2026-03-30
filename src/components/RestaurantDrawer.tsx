@@ -6,7 +6,7 @@ import { ExternalLink, MapPin } from "lucide-react";
 import Lightbox from "yet-another-react-lightbox";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/styles.css";
-import type { Restaurant } from "@/types";
+import type { RestaurantRow } from "@/types/database.types";
 
 /** Galerie : grid 3 colonnes, carrés, clic = Lightbox à l'index correspondant. */
 function GalleryGrid({
@@ -47,8 +47,8 @@ function GalleryGrid({
   );
 }
 
-function getMapsSearchUrl(restaurant: Restaurant): string {
-  const query = encodeURIComponent(`${restaurant.name} ${restaurant.address}`);
+function getMapsSearchUrl(restaurant: RestaurantRow): string {
+  const query = encodeURIComponent(`${restaurant.name} ${restaurant.address ?? "Paris"}`);
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
@@ -61,10 +61,10 @@ const DRAWER = {
 };
 
 interface RestaurantDrawerProps {
-  restaurant: Restaurant | null;
+  restaurant: RestaurantRow | null;
   isOpen: boolean;
   onClose: () => void;
-  getMapsUrl?: (r: Restaurant) => string;
+  getMapsUrl?: (r: RestaurantRow) => string;
 }
 
 export default function RestaurantDrawer({
@@ -114,7 +114,7 @@ export default function RestaurantDrawer({
               <h2 className="text-3xl font-bold text-white">{restaurant.name}</h2>
 
               {/* 2. Infos secondaires : cuisine • prix */}
-              <p className="text-sm text-white/60">{restaurant.cuisine} &#8226; {restaurant.priceRange}</p>
+              <p className="text-sm text-white/60">{restaurant.cuisine.join(", ")} &#8226; {restaurant.price_range ?? "€€"}</p>
 
               {/* 3. Adresse interactive (badge style carte) */}
               <a
@@ -125,32 +125,32 @@ export default function RestaurantDrawer({
                 className="inline-flex w-fit max-w-full min-h-[36px] items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-2.5 py-1 text-xs text-white shadow-lg transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
               >
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} aria-hidden />
-                <span className="min-w-0 truncate">{restaurant.address}</span>
+                <span className="min-w-0 truncate">{restaurant.address ?? `${restaurant.name} Paris`}</span>
                 <ExternalLink className="h-3 w-3 shrink-0 text-white/60" strokeWidth={2} aria-hidden />
               </a>
 
               {/* 4. Description */}
               <p className="text-[15px] leading-relaxed text-white/90">
-                {restaurant.description}
+                {restaurant.description ?? "Description indisponible."}
               </p>
 
               {/* 5. Galerie photos (layout Instagram) */}
-              {restaurant.gallery?.length > 0 && (
+              {restaurant.photos?.length > 0 && (
                 <section className="space-y-1.5" aria-label="Galerie photos">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-white/70">Galerie</h3>
                   <GalleryGrid
-                    images={restaurant.gallery}
+                    images={restaurant.photos}
                     onOpenLightbox={setPhotoIndex}
                   />
                 </section>
               )}
 
               {/* 6. Social links (tout en bas) */}
-              {(restaurant.instagramUrl ?? restaurant.tiktokUrl) && (
+              {(restaurant.instagram_url ?? restaurant.tiktok_url) && (
                 <div className="flex flex-wrap gap-2 pt-0">
-                  {restaurant.instagramUrl && (
+                  {restaurant.instagram_url && (
                     <a
-                      href={restaurant.instagramUrl}
+                      href={restaurant.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
@@ -161,9 +161,9 @@ export default function RestaurantDrawer({
                       Instagram
                     </a>
                   )}
-                  {restaurant.tiktokUrl && (
+                  {restaurant.tiktok_url && (
                     <a
-                      href={restaurant.tiktokUrl}
+                      href={restaurant.tiktok_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
@@ -180,11 +180,11 @@ export default function RestaurantDrawer({
             )}
 
             {/* Lightbox : s'ouvre au clic sur une image de la galerie */}
-            {restaurant.gallery?.length > 0 && (
+            {restaurant.photos?.length > 0 && (
               <Lightbox
                 open={photoIndex >= 0}
                 close={() => setPhotoIndex(-1)}
-                slides={restaurant.gallery.map((src) => ({ src }))}
+                slides={restaurant.photos.map((src) => ({ src }))}
                 index={photoIndex}
                 plugins={[Zoom]}
               />

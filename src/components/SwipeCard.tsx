@@ -11,7 +11,7 @@
 import { useCallback, useRef } from "react";
 import { motion, useMotionValue, useTransform, animate, PanInfo } from "framer-motion";
 import { ExternalLink, MapPin } from "lucide-react";
-import type { Restaurant } from "@/types";
+import type { RestaurantRow } from "@/types/database.types";
 
 const SWIPE_THRESHOLD_PX = 100;
 const CARD_WIDTH = 340;
@@ -23,13 +23,17 @@ const DRAG_THRESHOLD_DETAILS_PX = 5;
 
 const SPRING = { type: "spring" as const, stiffness: 350, damping: 40, mass: 1 };
 
-export function CardFace({ restaurant }: { restaurant: Restaurant }) {
+export function CardFace({ restaurant }: { restaurant: RestaurantRow }) {
+  const image = restaurant.photos?.[0] ?? null;
+  const cuisineLabel = Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(", ") : "";
+  const priceLabel = restaurant.price_range ?? "€€";
+  const addressLabel = restaurant.address ?? `${restaurant.name} Paris`;
   return (
     <div className="relative h-full w-full overflow-hidden bg-neutral-900">
-      {restaurant.img ? (
+      {image ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
-          src={restaurant.img}
+          src={image}
           alt={restaurant.name}
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -45,14 +49,14 @@ export function CardFace({ restaurant }: { restaurant: Restaurant }) {
       <div className="absolute bottom-[80px] left-0 right-0 z-[3] flex flex-col gap-1 p-5 pt-20">
         <h2 className="text-xl font-bold text-white drop-shadow-md">{restaurant.name}</h2>
         <p className="text-xs text-neutral-400">
-          {restaurant.cuisine} &#8226; {restaurant.priceRange}
+          {cuisineLabel} &#8226; {priceLabel}
         </p>
       </div>
 
       {/* Badge adresse : à gauche, bien au-dessus des boutons Cœur/Croix */}
       <div className="absolute bottom-14 left-0 right-0 z-[999] flex justify-start px-5 pointer-events-none">
         <a
-          href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(restaurant.name + " " + restaurant.address)}
+          href={"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(restaurant.name + " " + addressLabel)}
           target="_blank"
           rel="noopener noreferrer"
           title="Ouvrir dans Maps"
@@ -62,7 +66,7 @@ export function CardFace({ restaurant }: { restaurant: Restaurant }) {
             e.stopPropagation();
             e.nativeEvent.stopImmediatePropagation();
             window.open(
-              "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(restaurant.name + " " + restaurant.address),
+              "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(restaurant.name + " " + addressLabel),
               "_blank"
             );
           }}
@@ -70,7 +74,7 @@ export function CardFace({ restaurant }: { restaurant: Restaurant }) {
           className="pointer-events-auto flex min-h-[40px] w-fit max-w-[calc(100%-2rem)] cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-black/90 px-3 py-1.5 text-xs text-white shadow-lg transition hover:scale-105 hover:bg-black/95 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40"
         >
           <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} aria-hidden />
-          <span className="min-w-0 truncate">{restaurant.address}</span>
+          <span className="min-w-0 truncate">{addressLabel}</span>
           <ExternalLink className="h-3 w-3 shrink-0 text-white/60" strokeWidth={2} aria-hidden />
         </a>
       </div>
@@ -79,7 +83,7 @@ export function CardFace({ restaurant }: { restaurant: Restaurant }) {
 }
 
 interface SwipeCardProps {
-  restaurant: Restaurant;
+  restaurant: RestaurantRow;
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   onDetailsRequest?: () => void;

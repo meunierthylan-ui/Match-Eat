@@ -9,8 +9,14 @@ import FilterBar, { type FilterState } from "@/components/FilterBar";
 import MatchOverlay from "@/components/MatchOverlay";
 import RestaurantDrawer from "@/components/RestaurantDrawer";
 import SwipeCard, { CardFace } from "@/components/SwipeCard";
-import type { Restaurant, SupabaseRestaurant } from "@/types";
-import { mapSupabaseToRestaurant } from "@/types";
+import type { RestaurantRow } from "@/types/database.types";
+
+interface RestaurantDetailsRow {
+  description: string | null;
+  address: string | null;
+  instagram_url: string | null;
+  tiktok_url: string | null;
+}
 
 function getPriceLevel(priceRange: string): string {
   const match = priceRange.match(/^(€+)/);
@@ -56,7 +62,7 @@ function formatFiltersSummary(filters: FilterState): string {
 }
 
 /** Filtre avec les noms de colonnes SQL (price_range, district, cuisine array). */
-function filterRestaurants(list: SupabaseRestaurant[], filters: FilterState): SupabaseRestaurant[] {
+function filterRestaurants(list: RestaurantRow[], filters: FilterState): RestaurantRow[] {
   return list.filter((r) => {
     if (Array.isArray(filters.prix) && filters.prix.length > 0) {
       const level = getPriceLevel(r.price_range ?? "");
@@ -72,10 +78,14 @@ function filterRestaurants(list: SupabaseRestaurant[], filters: FilterState): Su
     }
     if (Array.isArray(filters.ambiance) && filters.ambiance.length > 0) {
       const desc = r.description?.toLowerCase() ?? "";
-      const match = filters.ambiance.some((a) =>
-        desc.includes((a ?? "").toLowerCase())
-      );
-      if (!match) return false;
+      // La description est chargée à l'ouverture du détail : on n'applique
+      // ce filtre que si la description est disponible dans la ligne listée.
+      if (desc) {
+        const match = filters.ambiance.some((a) =>
+          desc.includes((a ?? "").toLowerCase())
+        );
+        if (!match) return false;
+      }
     }
     if (Array.isArray(filters.arrondissement) && filters.arrondissement.length > 0) {
       const districtMatch = (r.district ?? "").match(/\d+/);
@@ -108,9 +118,15 @@ const STACK_SIZE = 2;
 const STACK_OFFSET = 8;
 const STACK_SCALE_STEP = 0.03;
 
-function getMapsUrl(restaurant: Restaurant): string {
-  const query = encodeURIComponent(restaurant.address || `${restaurant.name} ${restaurant.district} Paris`);
+function getMapsUrl(restaurant: RestaurantRow): string {
+  const query = encodeURIComponent(
+    restaurant.address || `${restaurant.name} ${restaurant.district ?? ""} Paris`
+  );
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+function getPrimaryPhoto(restaurant: RestaurantRow): string | null {
+  return restaurant.photos?.[0] ?? null;
 }
 
 function triggerFirstFavoriteConfetti() {
@@ -145,7 +161,7 @@ function IconBack() {
   );
 }
 
-function loadSavedRestaurants(): Restaurant[] {
+function loadSavedRestaurants(): RestaurantRow[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(SAVED_FAVORITES_KEY);
@@ -154,20 +170,35 @@ function loadSavedRestaurants(): Restaurant[] {
     if (!Array.isArray(data)) return [];
     return data.map((item: Record<string, unknown>) => {
       const photos = Array.isArray(item.photos) ? (item.photos as string[]) : (Array.isArray(item.gallery) ? (item.gallery as string[]) : []);
+      const priceRange = (item.priceRange as string) ?? (item.price_range as string) ?? (item.prix as string) ?? "€€";
+      const cuisine = Array.isArray(item.cuisine)
+        ? (item.cuisine as string[])
+        : typeof item.cuisine === "string"
+          ? (item.cuisine as string).split(",").map((v) => v.trim()).filter(Boolean)
+          : [];
       return {
         id: typeof item.id === "number" ? item.id : Number(item.id) || 0,
         name: (item.name as string) ?? (item.nom as string) ?? "",
         district: (item.district as string) ?? (item.quartier as string) ?? "",
         description: (item.description as string) ?? "",
         address: (item.address as string) ?? "",
-        priceRange: (item.priceRange as string) ?? (item.price_range as string) ?? (item.prix as string) ?? "€€",
-        cuisine: Array.isArray(item.cuisine) ? (item.cuisine as string[]).join(", ") : (item.cuisine as string) ?? "",
-        img: (item.img as string) ?? (item.image_url as string) ?? photos[0] ?? null,
-        gallery: photos.length > 0 ? photos : (Array.isArray(item.gallery) ? (item.gallery as string[]) : []),
-        instagramUrl: typeof item.instagramUrl === "string" ? item.instagramUrl : (typeof item.instagram_url === "string" ? item.instagram_url : undefined),
-        tiktokUrl: typeof item.tiktokUrl === "string" ? item.tiktokUrl : (typeof item.tiktok_url === "string" ? item.tiktok_url : undefined),
-        note: typeof item.note === "number" ? item.note : 4,
-      } satisfies Restaurant;
+        price_range: priceRange,
+        cuisine,
+        photos: photos.length > 0 ? photos : (Array.isArray(item.gallery) ? (item.gallery as string[]) : []),
+        instagram_url:
+          typeof item.instagram_url === "string"
+            ? item.instagram_url
+            : typeof item.instagramUrl === "string"
+              ? item.instagramUrl
+              : null,
+        tiktok_url:
+          typeof item.tiktok_url === "string"
+            ? item.tiktok_url
+            : typeof item.tiktokUrl === "string"
+              ? item.tiktokUrl
+              : null,
+        is_solo_friendly: null,
+      } satisfies RestaurantRow;
     });
   } catch {
     return [];
@@ -183,21 +214,21 @@ const initialFilters: FilterState = {
 
 export default function Home() {
   const [view, setView] = useState<View>("home");
-  const [restaurants, setRestaurants] = useState<SupabaseRestaurant[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantRow[]>([]);
   const [restaurantsLoading, setRestaurantsLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
-  const [savedRestaurants, setSavedRestaurants] = useState<Restaurant[]>([]);
+  const [savedRestaurants, setSavedRestaurants] = useState<RestaurantRow[]>([]);
   const [cardIndex, setCardIndex] = useState(0);
-  const [favorites, setFavorites] = useState<Restaurant[]>([]);
+  const [favorites, setFavorites] = useState<RestaurantRow[]>([]);
   const [groupStep, setGroupStep] = useState<GroupStep>("choose");
   const [groupCode, setGroupCode] = useState("");
   const [groupReadyCount, setGroupReadyCount] = useState(0);
   const [groupWaitingMessage, setGroupWaitingMessage] = useState<string | null>(null);
   const [setupNoResultsAlert, setSetupNoResultsAlert] = useState(false);
-  const [selectedRestaurantForDetails, setSelectedRestaurantForDetails] = useState<Restaurant | null>(null);
-  const [groupRestaurants, setGroupRestaurants] = useState<Restaurant[]>([]);
+  const [selectedRestaurantForDetails, setSelectedRestaurantForDetails] = useState<RestaurantRow | null>(null);
+  const [groupRestaurants, setGroupRestaurants] = useState<RestaurantRow[]>([]);
   const [groupVotes, setGroupVotes] = useState<Record<number, number>>({});
-  const [groupMatchRestaurant, setGroupMatchRestaurant] = useState<Restaurant | null>(null);
+  const [groupMatchRestaurant, setGroupMatchRestaurant] = useState<RestaurantRow | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [groupFiltersOpen, setGroupFiltersOpen] = useState(false);
 
@@ -209,13 +240,15 @@ export default function Home() {
         setRestaurantsLoading(false);
         return;
       }
-      const { data, error } = await supabase.from("restaurants").select("*");
+      const { data, error } = await supabase
+        .from("restaurants")
+        .select("id, name, cuisine, price_range, district, photos, is_solo_friendly");
       if (cancelled) return;
       if (error) {
         console.error("Supabase restaurants:", error);
         setRestaurants([]);
       } else {
-        const list = (data as SupabaseRestaurant[]) ?? [];
+        const list = (data as RestaurantRow[]) ?? [];
         console.log("restaurants from Supabase:", list);
         setRestaurants(list);
       }
@@ -229,9 +262,36 @@ export default function Home() {
     () => filterRestaurants(restaurants, filters),
     [restaurants, filters]
   );
-  const filteredRestaurants = useMemo(
-    () => shuffleArray(rawFiltered).map(mapSupabaseToRestaurant),
-    [rawFiltered]
+  const filteredRestaurants = useMemo(() => shuffleArray(rawFiltered), [rawFiltered]);
+
+  const openRestaurantDetails = useCallback(
+    async (restaurant: RestaurantRow | undefined) => {
+      if (!restaurant) return;
+      setSelectedRestaurantForDetails(restaurant);
+      if (!supabase) return;
+
+      const { data, error } = await supabase
+        .from("restaurants")
+        .select("description, address, instagram_url, tiktok_url")
+        .eq("id", restaurant.id)
+        .maybeSingle();
+
+      if (error || !data) return;
+      const details = data as RestaurantDetailsRow;
+
+      setSelectedRestaurantForDetails((prev) =>
+        prev && prev.id === restaurant.id
+          ? {
+              ...prev,
+              description: details.description ?? prev.description,
+              address: details.address ?? prev.address,
+              instagram_url: details.instagram_url ?? prev.instagram_url,
+              tiktok_url: details.tiktok_url ?? prev.tiktok_url,
+            }
+          : prev
+      );
+    },
+    []
   );
 
   const isGroupSwipe = view === "group" && groupStep === "swipe";
@@ -252,7 +312,7 @@ export default function Home() {
       const sorted = [...poolSource].sort((a, b) => a.id - b.id);
       const seed = parseInt(code, 10) || 0;
       const shuffled = seededShuffle(sorted, seed);
-      const pool = shuffled.slice(0, GROUP_POOL_SIZE).map(mapSupabaseToRestaurant);
+      const pool = shuffled.slice(0, GROUP_POOL_SIZE);
       setGroupRestaurants(pool);
       setGroupVotes({});
       setGroupMatchRestaurant(null);
@@ -435,10 +495,10 @@ export default function Home() {
                       className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-md transition hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(251,191,36,0.1)] active:scale-[0.98]"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {restaurant.img ? (
+                      {getPrimaryPhoto(restaurant) ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
-                          src={restaurant.img}
+                          src={getPrimaryPhoto(restaurant) ?? undefined}
                           alt={restaurant.name}
                           className="h-full w-full object-cover"
                         />
@@ -584,10 +644,10 @@ export default function Home() {
                   >
                     <div className="relative aspect-[3/4] w-full">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {restaurant.img ? (
+                      {getPrimaryPhoto(restaurant) ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
-                          src={restaurant.img}
+                          src={getPrimaryPhoto(restaurant) ?? undefined}
                           alt={restaurant.name}
                           className="h-full w-full object-cover"
                         />
@@ -904,10 +964,10 @@ export default function Home() {
                               >
                                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  {restaurant.img ? (
+                                  {getPrimaryPhoto(restaurant) ? (
                                     /* eslint-disable-next-line @next/next/no-img-element */
                                     <img
-                                      src={restaurant.img}
+                                      src={getPrimaryPhoto(restaurant) ?? undefined}
                                       alt=""
                                       className="h-full w-full object-cover"
                                     />
@@ -949,10 +1009,10 @@ export default function Home() {
                               >
                                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  {restaurant.img ? (
+                                  {getPrimaryPhoto(restaurant) ? (
                                     /* eslint-disable-next-line @next/next/no-img-element */
                                     <img
-                                      src={restaurant.img}
+                                      src={getPrimaryPhoto(restaurant) ?? undefined}
                                       alt=""
                                       className="h-full w-full object-cover"
                                     />
@@ -1025,10 +1085,10 @@ export default function Home() {
                       >
                         <div className="relative aspect-[3/4] w-full">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          {restaurant.img ? (
+                          {getPrimaryPhoto(restaurant) ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
-                              src={restaurant.img}
+                              src={getPrimaryPhoto(restaurant) ?? undefined}
                               alt={restaurant.name}
                               className="h-full w-full object-cover"
                             />
@@ -1126,7 +1186,9 @@ export default function Home() {
                       restaurant={visibleCards[0]}
                       onSwipeLeft={handleSwipeLeft}
                       onSwipeRight={handleSwipeRight}
-                      onDetailsRequest={() => setSelectedRestaurantForDetails(visibleCards[0])}
+                      onDetailsRequest={() => {
+                        void openRestaurantDetails(visibleCards[0]);
+                      }}
                     />
                   </motion.div>
                 )}

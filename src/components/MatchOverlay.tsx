@@ -1,7 +1,7 @@
-import type { Restaurant } from "@/types";
+import type { RestaurantRow } from "@/types/database.types";
 
 interface MatchOverlayProps {
-  groupMatch?: Restaurant | null;
+  groupMatch?: RestaurantRow | null;
 }
 
 export default function MatchOverlay({ groupMatch }: MatchOverlayProps) {
