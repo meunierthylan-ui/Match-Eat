@@ -56,9 +56,9 @@ async function fetchRestaurantById({ supabaseUrl, supabaseKey, id }) {
   return rows?.[0] ?? null;
 }
 
-async function searchPlace({ apiKey, name }) {
-  const query = encodeURIComponent(`${name} Paris`);
-  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${apiKey}`;
+async function searchPlaceByQuery({ apiKey, query }) {
+  const encodedQuery = encodeURIComponent(query);
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodedQuery}&key=${apiKey}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Google Places HTTP ${res.status}`);
@@ -68,6 +68,11 @@ async function searchPlace({ apiKey, name }) {
     throw new Error(`Google Places status=${data.status} (${data.error_message ?? "sans détail"})`);
   }
   return data.results?.[0] ?? null;
+}
+
+async function searchPlace({ apiKey, name }) {
+  const query = `${name} Paris`;
+  return searchPlaceByQuery({ apiKey, query });
 }
 
 async function fetchPlaceDetailsPhotos({ apiKey, placeId }) {
@@ -101,33 +106,46 @@ function buildPhotoUrlsFromRefs({ refs, apiKey }) {
 }
 
 async function resolvePhotoUrls({ apiKey, name }) {
-  const place = await searchPlace({ apiKey, name });
-  if (!place) return [];
-
   const refs = [];
   const seen = new Set();
-  for (const ref of collectPhotoRefs(place.photos)) {
-    if (!seen.has(ref)) {
-      seen.add(ref);
-      refs.push(ref);
-    }
-    if (refs.length >= 2) break;
-  }
 
-  if (refs.length < 2 && place.place_id) {
-    const detailsPhotos = await fetchPlaceDetailsPhotos({
-      apiKey,
-      placeId: place.place_id,
-    });
-    for (const ref of collectPhotoRefs(detailsPhotos)) {
+  async function collectRefsFromPlace(place) {
+    if (!place) return;
+    for (const ref of collectPhotoRefs(place.photos)) {
       if (!seen.has(ref)) {
         seen.add(ref);
         refs.push(ref);
       }
       if (refs.length >= 2) break;
     }
+    if (refs.length < 2 && place.place_id) {
+      const detailsPhotos = await fetchPlaceDetailsPhotos({
+        apiKey,
+        placeId: place.place_id,
+      });
+      for (const ref of collectPhotoRefs(detailsPhotos)) {
+        if (!seen.has(ref)) {
+          seen.add(ref);
+          refs.push(ref);
+        }
+        if (refs.length >= 2) break;
+      }
+    }
   }
 
+  const primaryPlace = await searchPlace({ apiKey, name });
+  await collectRefsFromPlace(primaryPlace);
+
+  // Fallback demandé: 2e recherche orientée "intérieur" si on a < 2 photos.
+  if (refs.length < 2) {
+    const indoorPlace = await searchPlaceByQuery({
+      apiKey,
+      query: `${name} Paris intérieur`,
+    });
+    await collectRefsFromPlace(indoorPlace);
+  }
+
+  // On retourne 1 ou 2 URLs max, sans duplication.
   return buildPhotoUrlsFromRefs({ refs: refs.slice(0, 2), apiKey });
 }
 
