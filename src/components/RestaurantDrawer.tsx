@@ -75,12 +75,8 @@ export default function RestaurantDrawer({
   const [isExpanded, setIsExpanded] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(-1);
   const rawPhotos = Array.isArray(restaurant?.photos) ? restaurant.photos : [];
-  // Force l'ordre photos[0], photos[1], puis le reste en évitant les doublons.
-  const galleryImages = Array.from(
-    new Set(
-      [rawPhotos[0], rawPhotos[1], ...rawPhotos]
-        .filter((src): src is string => typeof src === "string" && src.trim().length > 0)
-    )
+  const galleryImages = rawPhotos.filter(
+    (src): src is string => typeof src === "string" && src.trim().length > 0
   );
 
   useEffect(() => {
