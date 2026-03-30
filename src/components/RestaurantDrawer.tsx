@@ -74,6 +74,14 @@ export default function RestaurantDrawer({
 }: RestaurantDrawerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(-1);
+  const rawPhotos = Array.isArray(restaurant?.photos) ? restaurant.photos : [];
+  // Force l'ordre photos[0], photos[1], puis le reste en évitant les doublons.
+  const galleryImages = Array.from(
+    new Set(
+      [rawPhotos[0], rawPhotos[1], ...rawPhotos]
+        .filter((src): src is string => typeof src === "string" && src.trim().length > 0)
+    )
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -135,11 +143,11 @@ export default function RestaurantDrawer({
               </p>
 
               {/* 5. Galerie photos (layout Instagram) */}
-              {restaurant.photos?.length > 0 && (
+              {galleryImages.length > 0 && (
                 <section className="space-y-1.5" aria-label="Galerie photos">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-white/70">Galerie</h3>
                   <GalleryGrid
-                    images={restaurant.photos}
+                    images={galleryImages}
                     onOpenLightbox={setPhotoIndex}
                   />
                 </section>
@@ -180,11 +188,11 @@ export default function RestaurantDrawer({
             )}
 
             {/* Lightbox : s'ouvre au clic sur une image de la galerie */}
-            {restaurant.photos?.length > 0 && (
+            {galleryImages.length > 0 && (
               <Lightbox
                 open={photoIndex >= 0}
                 close={() => setPhotoIndex(-1)}
-                slides={restaurant.photos.map((src) => ({ src }))}
+                slides={galleryImages.map((src) => ({ src }))}
                 index={photoIndex}
                 plugins={[Zoom]}
               />

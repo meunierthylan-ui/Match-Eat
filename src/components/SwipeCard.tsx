@@ -24,7 +24,7 @@ const DRAG_THRESHOLD_DETAILS_PX = 5;
 const SPRING = { type: "spring" as const, stiffness: 350, damping: 40, mass: 1 };
 
 export function CardFace({ restaurant }: { restaurant: RestaurantRow }) {
-  const image = restaurant.photos?.[0] ?? null;
+  const image = restaurant.photos?.[0] ?? restaurant.photos?.[1] ?? null;
   const cuisineLabel = Array.isArray(restaurant.cuisine) ? restaurant.cuisine.join(", ") : "";
   const priceLabel = restaurant.price_range ?? "€€";
   const addressLabel = restaurant.address ?? `${restaurant.name} Paris`;

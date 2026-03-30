@@ -100,7 +100,7 @@ function buildPhotoUrlsFromRefs({ refs, apiKey }) {
   return refs.map((ref) => photoRefToUrl(ref, apiKey));
 }
 
-async function resolveAtLeastTwoPhotoUrls({ apiKey, name }) {
+async function resolvePhotoUrls({ apiKey, name }) {
   const place = await searchPlace({ apiKey, name });
   if (!place) return [];
 
@@ -187,18 +187,23 @@ async function main() {
   for (const restaurant of restaurants) {
     const { id, name, photos: existingPhotos } = restaurant;
     try {
-      let photoUrls = await resolveAtLeastTwoPhotoUrls({ apiKey: googleApiKey, name });
-
-      if (photoUrls.length < 2 && Array.isArray(existingPhotos) && existingPhotos.length >= 2) {
+      let photoUrls = await resolvePhotoUrls({ apiKey: googleApiKey, name });
+      if (photoUrls.length === 0 && Array.isArray(existingPhotos) && existingPhotos.length > 0) {
         photoUrls = existingPhotos.slice(0, 2);
       }
 
-      if (photoUrls.length < 2) {
-        throw new Error("moins de 2 photos disponibles même après fallback Place Details");
+      // Déduplication stricte : Supabase reçoit 1 ou 2 URLs distinctes.
+      photoUrls = [...new Set(photoUrls.filter(Boolean))].slice(0, 2);
+      if (photoUrls.length === 0) {
+        throw new Error("aucune photo disponible (Google + fallback existant)");
       }
 
-      console.log(`🖼️ ${name} - URLs trouvées:`);
-      photoUrls.forEach((u, i) => console.log(`   ${i + 1}. ${u}`));
+      const isDistinct = new Set(photoUrls).size === photoUrls.length;
+      if (!isDistinct) {
+        throw new Error(`URLs dupliquées détectées avant update: ${JSON.stringify(photoUrls)}`);
+      }
+
+      console.log(`🖼️ ${name} - tableau photos avant update: ${JSON.stringify(photoUrls)}`);
 
       const updated = await updateRestaurantPhotos({
         supabaseUrl,
@@ -215,9 +220,8 @@ async function main() {
 
       const storedPhotos = Array.isArray(check?.photos) ? check.photos : [];
       const isApplied =
-        storedPhotos.length >= 2 &&
-        storedPhotos[0] === photoUrls[0] &&
-        storedPhotos[1] === photoUrls[1];
+        storedPhotos.length === photoUrls.length &&
+        photoUrls.every((url, idx) => storedPhotos[idx] === url);
       if (!isApplied) {
         throw new Error(
           `update non appliqué en base pour id=${id}. Photos en base: ${JSON.stringify(storedPhotos)}`
