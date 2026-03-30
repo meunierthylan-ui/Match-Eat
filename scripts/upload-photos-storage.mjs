@@ -24,12 +24,48 @@ function parseEnvFile(content) {
   return env;
 }
 
+const TARGET_RESTAURANT_NAME = process.argv[2]?.trim() ?? "";
+
 function sleep(ms) {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 }
 
-function isHttpImageUrl(url) {
-  return typeof url === "string" && /^https?:\/\//i.test(url);
+function buildGooglePhotoUrl(photoReference, apiKey) {
+  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1600&photo_reference=${encodeURIComponent(photoReference)}&key=${encodeURIComponent(apiKey)}`;
+}
+
+async function fetchPlaceId(name, apiKey) {
+  const query = encodeURIComponent(`${name} Paris`);
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Text Search HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  const placeId = data?.results?.[0]?.place_id;
+  if (!placeId) {
+    throw new Error("Aucun place_id trouvé");
+  }
+
+  return placeId;
+}
+
+async function fetchPlaceDetailsPhotos(placeId, apiKey) {
+  const fields = encodeURIComponent("photos");
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Place Details HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  const photos = Array.isArray(data?.result?.photos) ? data.result.photos : [];
+  const references = photos
+    .map((photo) => photo?.photo_reference)
+    .filter((ref) => typeof ref === "string" && ref.trim().length > 0);
+
+  return references;
 }
 
 function normalizePhotos(value) {
@@ -75,32 +111,41 @@ async function main() {
     throw new Error(`Erreur lecture restaurants: ${readError.message}`);
   }
 
-  console.log(`📦 ${restaurants.length} restaurants trouvés.`);
-  console.log(`🛠️ Re-upload forcé pour tous les restaurants.`);
+  const restaurantsToProcess = TARGET_RESTAURANT_NAME
+    ? restaurants.filter((r) => r.name === TARGET_RESTAURANT_NAME)
+    : restaurants;
+
+  console.log(`📦 ${restaurantsToProcess.length} restaurants trouvés pour traitement.`);
+  console.log(`🛠️ Re-upload forcé sur la sélection courante.`);
 
   let okCount = 0;
   let failCount = 0;
 
-  for (const restaurant of restaurants) {
+  for (const restaurant of restaurantsToProcess) {
     const { id, name } = restaurant;
     try {
-      const currentPhotos = normalizePhotos(restaurant.photos);
-      const sourcePhotos = currentPhotos.slice(0, 2);
+      const placeId = await fetchPlaceId(name, googleApiKey);
+      const photoReferences = await fetchPlaceDetailsPhotos(placeId, googleApiKey);
+      const uniquePhotoReferences = [...new Set(photoReferences)];
+      let sourcePhotos = uniquePhotoReferences
+        .slice(0, 2)
+        .map((ref) => buildGooglePhotoUrl(ref, googleApiKey));
 
       if (sourcePhotos.length === 0) {
-        console.log(`⚠️ ${name} - aucune photo source, skip`);
-        await sleep(300);
-        continue;
+        const fallbackPhotos = normalizePhotos(restaurant.photos).slice(0, 2);
+        if (fallbackPhotos.length === 0) {
+          console.log(`⚠️ ${name} - aucune photo Google Place Details et aucun fallback en base, skip`);
+          await sleep(300);
+          continue;
+        }
+        sourcePhotos = fallbackPhotos;
+        console.log(`↩️ ${name} - fallback sur photos existantes en base (${sourcePhotos.length})`);
       }
 
       const uploadedPublicUrls = [];
 
       for (const sourceUrl of sourcePhotos) {
         const photoNumber = uploadedPublicUrls.length + 1;
-        if (!isHttpImageUrl(sourceUrl)) {
-          throw new Error(`URL image invalide: ${sourceUrl}`);
-        }
-
         const fileBuffer = await downloadImage(sourceUrl);
         const filePath = `restaurant-${id}/photo-${photoNumber}.jpg`;
 
