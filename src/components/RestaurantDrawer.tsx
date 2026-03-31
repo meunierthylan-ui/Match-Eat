@@ -16,33 +16,67 @@ function GalleryGrid({
   images: string[];
   onOpenLightbox: (index: number) => void;
 }) {
-  const hasMore = images.length > 3;
-  const extraCount = images.length - 3;
+  const firstRow = images.slice(0, 2);
+  const secondRow = images.slice(2, 5);
+  const hasMore = images.length > 5;
+  const extraCount = images.length - 5;
 
   return (
-    <div className="grid w-full grid-cols-3 gap-2 rounded-xl overflow-hidden">
-      {images.slice(0, 3).map((src, i) => (
-        <motion.button
-          type="button"
-          key={`${src}-${i}`}
-          onClick={() => onOpenLightbox(i)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
-          className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-800 cursor-pointer border-0 p-0 text-left focus:outline-none focus:ring-2 focus:ring-white/40"
-        >
-          <img
-            src={src}
-            alt=""
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-          {i === 2 && hasMore && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
-              +{extraCount} photos
-            </span>
-          )}
-        </motion.button>
-      ))}
+    <div className="w-full space-y-2 rounded-xl overflow-hidden">
+      {/* Ligne 1 : 2 grandes photos côte à côte */}
+      {firstRow.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          {firstRow.map((src, i) => (
+            <motion.button
+              type="button"
+              key={`row1-${src}-${i}`}
+              onClick={() => onOpenLightbox(i)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-800 cursor-pointer border-0 p-0 text-left focus:outline-none focus:ring-2 focus:ring-white/40"
+            >
+              <img
+                src={src}
+                alt=""
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </motion.button>
+          ))}
+        </div>
+      )}
+
+      {/* Ligne 2 : jusqu'à 3 petites vignettes */}
+      {secondRow.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {secondRow.map((src, i) => {
+            const globalIndex = 2 + i;
+            const isLastVisible = i === secondRow.length - 1;
+            return (
+              <motion.button
+                type="button"
+                key={`row2-${src}-${i}`}
+                onClick={() => onOpenLightbox(globalIndex)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-800 cursor-pointer border-0 p-0 text-left focus:outline-none focus:ring-2 focus:ring-white/40"
+              >
+                <img
+                  src={src}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                {isLastVisible && hasMore && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
+                    +{extraCount} photos
+                  </span>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
