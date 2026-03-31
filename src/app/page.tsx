@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { RotateCcw } from "lucide-react";
 import confetti from "canvas-confetti";
@@ -125,6 +125,66 @@ function getMapsUrl(restaurant: RestaurantRow): string {
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
+function FavoritesMap({ restaurants }: { restaurants: RestaurantRow[] }) {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (typeof window === "undefined") return;
+    const g = (window as any).google;
+    if (!g?.maps) return;
+
+    const map = new g.maps.Map(mapRef.current, {
+      zoom: 13,
+      center: { lat: 48.8566, lng: 2.3522 },
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    const bounds = new g.maps.LatLngBounds();
+
+    restaurants.forEach((restaurant) => {
+      const placeId = restaurant.google_place_id;
+      if (!placeId) return;
+
+      const marker = new g.maps.Marker({
+        map,
+        title: restaurant.name,
+        place: {
+          placeId,
+          location: undefined,
+        },
+      });
+
+      const infoWindow = new g.maps.InfoWindow({
+        content: `<div style="font-size:13px;font-weight:600;">${restaurant.name}</div>`,
+      });
+
+      marker.addListener("click", () => {
+        infoWindow.open({ anchor: marker, map, shouldFocus: false });
+      });
+
+      if (marker.getPosition) {
+        const pos = marker.getPosition();
+        if (pos) bounds.extend(pos);
+      }
+    });
+
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds);
+    }
+  }, [restaurants]);
+
+  if (restaurants.length === 0) return null;
+
+  return (
+    <div className="mb-3 h-64 w-full overflow-hidden rounded-2xl border border-white/10 bg-neutral-900">
+      <div ref={mapRef} className="h-full w-full" />
+    </div>
+  );
+}
+
 function getPrimaryPhoto(restaurant: RestaurantRow): string | null {
   return restaurant.photos?.[0] ?? null;
 }
@@ -234,6 +294,7 @@ export default function Home() {
   const [groupMatchRestaurant, setGroupMatchRestaurant] = useState<RestaurantRow | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [groupFiltersOpen, setGroupFiltersOpen] = useState(false);
+  const [showFavoritesMap, setShowFavoritesMap] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -416,6 +477,11 @@ export default function Home() {
     setCardIndex(0);
     setFavorites([]);
   };
+
+  const handleRemoveFavorite = useCallback((id: number) => {
+    setSavedRestaurants((prev) => prev.filter((r) => r.id !== id));
+    setFavorites((prev) => prev.filter((r) => r.id !== id));
+  }, []);
 
   // Loader pendant la récupération des restaurants
   if (restaurantsLoading) {
@@ -619,7 +685,7 @@ export default function Home() {
       <div className="min-h-screen bg-black font-sans text-white">
         <main className="mx-auto flex min-h-screen max-w-md flex-col sm:max-w-lg">
           <header className="shrink-0 px-4 pt-4">
-            <div className="flex items-center gap-3 pb-2">
+            <div className="flex items-center justify-between gap-3 pb-2">
               <button
                 type="button"
                 onClick={() => setView("home")}
@@ -629,6 +695,15 @@ export default function Home() {
                 <IconBack />
                 <span>Retour</span>
               </button>
+              {savedRestaurants.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowFavoritesMap((v) => !v)}
+                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-200 transition hover:bg-amber-500/20"
+                >
+                  {showFavoritesMap ? "Masquer la carte" : "Voir sur la carte"}
+                </button>
+              )}
             </div>
             <h1 className="py-2 text-center text-xl font-semibold tracking-tight text-white">
               Mes Favoris
@@ -638,61 +713,89 @@ export default function Home() {
             {savedRestaurants.length === 0 ? (
               <p className="py-12 text-center text-white/60">Aucun restaurant enregistré.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {savedRestaurants.map((restaurant, index) => (
-                  <motion.article
-                    key={`${restaurant.id}-${index}`}
-                    className="overflow-hidden rounded-xl bg-white/5 shadow-lg"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.04, duration: 0.3 }}
-                  >
-                    <div className="relative aspect-[3/4] w-full">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {getPrimaryPhoto(restaurant) ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={getPrimaryPhoto(restaurant) ?? undefined}
-                          alt={restaurant.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-red-600" aria-label="Image manquante" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <h3 className="truncate text-sm font-semibold text-white drop-shadow-md">
-                          {restaurant.name}
-                        </h3>
-                        <p className="truncate text-xs text-white/85">{restaurant.district}</p>
-                      </div>
-                    </div>
-                    <div className="p-2">
-                      <a
-                        href={getMapsUrl(restaurant)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white transition hover:bg-green-500 active:scale-[0.98]"
+              <>
+                {showFavoritesMap && <FavoritesMap restaurants={savedRestaurants} />}
+                <div className="grid grid-cols-2 gap-3">
+                  {savedRestaurants.map((restaurant, index) => {
+                    const googleRating =
+                      typeof restaurant.google_rating === "number"
+                        ? restaurant.google_rating.toFixed(1)
+                        : null;
+                    return (
+                      <motion.article
+                        key={`${restaurant.id}-${index}`}
+                        className="overflow-hidden rounded-xl bg-white/5 shadow-lg"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.04, duration: 0.3 }}
                       >
-                        <span>Y aller</span>
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          />
-                        </svg>
-                      </a>
-                    </div>
-                  </motion.article>
-                ))}
-              </div>
+                        <div className="relative aspect-[3/4] w-full">
+                          <button
+                            type="button"
+                            onClick={() => openRestaurantDetails(restaurant)}
+                            className="group relative block h-full w-full text-left"
+                          >
+                            {getPrimaryPhoto(restaurant) ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={getPrimaryPhoto(restaurant) ?? undefined}
+                                alt={restaurant.name}
+                                className="h-full w-full object-cover group-hover:scale-[1.02] transition-transform"
+                              />
+                            ) : (
+                              <div className="h-full w-full bg-red-600" aria-label="Image manquante" />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                              <h3 className="truncate text-sm font-semibold text-white drop-shadow-md">
+                                {restaurant.name}
+                              </h3>
+                              <p className="truncate text-[11px] text-white/80">
+                                {restaurant.cuisine.join(", ") || "Restaurant"}
+                              </p>
+                              <p className="truncate text-[11px] text-white/70">
+                                {restaurant.price_range ?? "€€"}
+                                {googleRating != null && <> · ⭐ {googleRating}</>}
+                              </p>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFavorite(restaurant.id)}
+                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-[11px] text-white hover:bg-black/90"
+                            aria-label="Retirer des favoris"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="p-2">
+                          <a
+                            href={getMapsUrl(restaurant)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white transition hover:bg-green-500 active:scale-[0.98]"
+                          >
+                            <span>Y aller</span>
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
+                          </a>
+                        </div>
+                      </motion.article>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </section>
         </main>
