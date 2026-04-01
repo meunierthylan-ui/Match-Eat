@@ -133,76 +133,42 @@ function FavoritesMap({
   onOpenDrawer: (restaurant: RestaurantRow) => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any | null>(null);
-  const markersRef = useRef<any[]>([]);
 
-  // 1) Initialisation de la carte une seule fois
   useEffect(() => {
     if (!mapRef.current) return;
-    if (typeof window === "undefined") return;
     const g = (window as any).google;
     if (!g?.maps) return;
 
-    if (!mapInstanceRef.current) {
-      mapInstanceRef.current = new g.maps.Map(mapRef.current, {
-        zoom: 13,
-        center: { lat: 48.8566, lng: 2.3522 },
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-      });
-    }
-  }, []);
-
-  // 2) Ajout / mise à jour des marqueurs à chaque changement de restaurants
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    if (typeof window === "undefined") return;
-    const g = (window as any).google;
-    if (!g?.maps) return;
-
-    // Efface les anciens marqueurs
-    markersRef.current.forEach((marker) => {
-      marker.setMap(null);
-    });
-    markersRef.current = [];
-
-    const map = mapInstanceRef.current;
-    const bounds = new g.maps.LatLngBounds();
     const withCoords = restaurants
-      .map((r) => ({
-        ...r,
-        latitude: Number(r.latitude),
-        longitude: Number(r.longitude),
-      }))
+      .map((r) => ({ ...r, latitude: Number(r.latitude), longitude: Number(r.longitude) }))
       .filter(
         (r) =>
+          r.latitude &&
+          r.longitude &&
           !Number.isNaN(r.latitude) &&
-          !Number.isNaN(r.longitude) &&
-          r.latitude !== 0 &&
-          r.longitude !== 0,
+          !Number.isNaN(r.longitude),
       );
+
     if (withCoords.length === 0) return;
+
+    const map = new g.maps.Map(mapRef.current, {
+      zoom: 13,
+      center: { lat: 48.8566, lng: 2.3522 },
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    const bounds = new g.maps.LatLngBounds();
 
     withCoords.forEach((restaurant) => {
       const position = { lat: restaurant.latitude, lng: restaurant.longitude };
-      const marker = new g.maps.Marker({
-        map,
-        position,
-        title: restaurant.name,
-      });
-
-      marker.addListener("click", () => {
-        onOpenDrawer(restaurant);
-      });
-
-      markersRef.current.push(marker);
+      const marker = new g.maps.Marker({ map, position, title: restaurant.name });
+      marker.addListener("click", () => onOpenDrawer(restaurant));
       bounds.extend(position);
     });
 
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds);
-    }
+    if (!bounds.isEmpty()) map.fitBounds(bounds);
   }, [restaurants, onOpenDrawer]);
 
   if (restaurants.length === 0) return null;
