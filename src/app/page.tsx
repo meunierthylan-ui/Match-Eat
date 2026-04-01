@@ -133,21 +133,41 @@ function FavoritesMap({
   onOpenDrawer: (restaurant: RestaurantRow) => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<any | null>(null);
+  const markersRef = useRef<any[]>([]);
 
+  // 1) Initialisation de la carte une seule fois
   useEffect(() => {
     if (!mapRef.current) return;
     if (typeof window === "undefined") return;
     const g = (window as any).google;
     if (!g?.maps) return;
 
-    const map = new g.maps.Map(mapRef.current, {
-      zoom: 13,
-      center: { lat: 48.8566, lng: 2.3522 },
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-    });
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new g.maps.Map(mapRef.current, {
+        zoom: 13,
+        center: { lat: 48.8566, lng: 2.3522 },
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+    }
+  }, []);
 
+  // 2) Ajout / mise à jour des marqueurs à chaque changement de restaurants
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    if (typeof window === "undefined") return;
+    const g = (window as any).google;
+    if (!g?.maps) return;
+
+    // Efface les anciens marqueurs
+    markersRef.current.forEach((marker) => {
+      marker.setMap(null);
+    });
+    markersRef.current = [];
+
+    const map = mapInstanceRef.current;
     const bounds = new g.maps.LatLngBounds();
     const withCoords = restaurants.filter(
       (r) =>
@@ -170,6 +190,7 @@ function FavoritesMap({
         onOpenDrawer(restaurant);
       });
 
+      markersRef.current.push(marker);
       bounds.extend(position);
     });
 
