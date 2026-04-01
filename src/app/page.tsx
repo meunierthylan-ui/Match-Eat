@@ -125,7 +125,13 @@ function getMapsUrl(restaurant: RestaurantRow): string {
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
-function FavoritesMap({ restaurants }: { restaurants: RestaurantRow[] }) {
+function FavoritesMap({
+  restaurants,
+  onOpenDrawer,
+}: {
+  restaurants: RestaurantRow[];
+  onOpenDrawer: (restaurant: RestaurantRow) => void;
+}) {
   const mapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -161,11 +167,26 @@ function FavoritesMap({ restaurants }: { restaurants: RestaurantRow[] }) {
       });
 
       const mapsUrl = getMapsUrl(restaurant);
+      const cuisineText = restaurant.cuisine.join(", ") || "Restaurant";
+      const priceText = restaurant.price_range ?? "€€";
+      const ratingText =
+        typeof restaurant.google_rating === "number"
+          ? ` · ⭐ ${restaurant.google_rating.toFixed(1)}`
+          : "";
+      const detailsBtnId = `fav-details-${restaurant.id}`;
       const infoWindow = new g.maps.InfoWindow({
         content: `
           <div style="padding:8px;font-size:13px;">
             <strong>${restaurant.name}</strong><br/>
-            <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#4ade80;text-decoration:none;">
+            <span>${cuisineText} • ${priceText}${ratingText}</span><br/>
+            <button
+              id="${detailsBtnId}"
+              style="margin-top:6px;margin-bottom:4px;padding:4px 8px;border-radius:9999px;border:none;background:#fbbf24;color:#111;cursor:pointer;font-size:12px;"
+            >
+              Voir les détails
+            </button>
+            <br/>
+            <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#4ade80;text-decoration:none;font-size:12px;">
               Y aller
             </a>
           </div>
@@ -174,6 +195,16 @@ function FavoritesMap({ restaurants }: { restaurants: RestaurantRow[] }) {
 
       marker.addListener("click", () => {
         infoWindow.open({ anchor: marker, map, shouldFocus: false });
+        g.maps.event.addListenerOnce(infoWindow, "domready", () => {
+          const btn = document.getElementById(detailsBtnId);
+          if (btn) {
+            btn.addEventListener("click", (event) => {
+              event.preventDefault();
+              onOpenDrawer(restaurant);
+              infoWindow.close();
+            });
+          }
+        });
       });
 
       bounds.extend(position);
@@ -723,7 +754,12 @@ export default function Home() {
               <p className="py-12 text-center text-white/60">Aucun restaurant enregistré.</p>
             ) : (
               <>
-                {showFavoritesMap && <FavoritesMap restaurants={savedRestaurants} />}
+                {showFavoritesMap && (
+                  <FavoritesMap
+                    restaurants={savedRestaurants}
+                    onOpenDrawer={(restaurant) => openRestaurantDetails(restaurant)}
+                  />
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   {savedRestaurants.map((restaurant, index) => {
                     const googleRating =
