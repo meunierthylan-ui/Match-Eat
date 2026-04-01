@@ -143,37 +143,52 @@ function FavoritesMap({ restaurants }: { restaurants: RestaurantRow[] }) {
     });
 
     const bounds = new g.maps.LatLngBounds();
+    const withPlaceId = restaurants.filter((r) => r.google_place_id);
+    if (withPlaceId.length === 0) return;
 
-    restaurants.forEach((restaurant) => {
+    const service = new g.maps.places.PlacesService(map);
+
+    withPlaceId.forEach((restaurant) => {
       const placeId = restaurant.google_place_id;
       if (!placeId) return;
 
-      const marker = new g.maps.Marker({
-        map,
-        title: restaurant.name,
-        place: {
+      service.getDetails(
+        {
           placeId,
-          location: undefined,
+          fields: ["geometry", "name"],
         },
-      });
+        (place: any, status: string) => {
+          if (status !== g.maps.places.PlacesServiceStatus.OK) return;
+          const location = place?.geometry?.location;
+          if (!location) return;
 
-      const infoWindow = new g.maps.InfoWindow({
-        content: `<div style="font-size:13px;font-weight:600;">${restaurant.name}</div>`,
-      });
+          const marker = new g.maps.Marker({
+            map,
+            position: location,
+            title: restaurant.name,
+          });
 
-      marker.addListener("click", () => {
-        infoWindow.open({ anchor: marker, map, shouldFocus: false });
-      });
+          const mapsUrl = getMapsUrl(restaurant);
+          const infoWindow = new g.maps.InfoWindow({
+            content: `
+              <div style="font-size:13px;">
+                <div style="font-weight:600;margin-bottom:4px;">${restaurant.name}</div>
+                <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#4ade80;text-decoration:none;">
+                  Y aller
+                </a>
+              </div>
+            `,
+          });
 
-      if (marker.getPosition) {
-        const pos = marker.getPosition();
-        if (pos) bounds.extend(pos);
-      }
+          marker.addListener("click", () => {
+            infoWindow.open({ anchor: marker, map, shouldFocus: false });
+          });
+
+          bounds.extend(location);
+          map.fitBounds(bounds);
+        },
+      );
     });
-
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds);
-    }
   }, [restaurants]);
 
   if (restaurants.length === 0) return null;
