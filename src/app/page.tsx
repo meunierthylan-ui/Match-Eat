@@ -221,51 +221,41 @@ function IconBack() {
   );
 }
 
-function loadSavedRestaurants(): RestaurantRow[] {
+async function loadSavedRestaurants(): Promise<RestaurantRow[]> {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(SAVED_FAVORITES_KEY);
     if (!raw) return [];
     const data = JSON.parse(raw) as unknown;
     if (!Array.isArray(data)) return [];
-    return data.map((item: Record<string, unknown>) => {
-      const photos = Array.isArray(item.photos) ? (item.photos as string[]) : (Array.isArray(item.gallery) ? (item.gallery as string[]) : []);
-      const priceRange = (item.priceRange as string) ?? (item.price_range as string) ?? (item.prix as string) ?? "€€";
-      const cuisine = Array.isArray(item.cuisine)
-        ? (item.cuisine as string[])
-        : typeof item.cuisine === "string"
-          ? (item.cuisine as string).split(",").map((v) => v.trim()).filter(Boolean)
-          : [];
-      return {
-        id: typeof item.id === "number" ? item.id : Number(item.id) || 0,
-        name: (item.name as string) ?? (item.nom as string) ?? "",
-        district: (item.district as string) ?? (item.quartier as string) ?? "",
-        description: (item.description as string) ?? "",
-        address: (item.address as string) ?? "",
-        price_range: priceRange,
-        cuisine,
-        photos: photos.length > 0 ? photos : (Array.isArray(item.gallery) ? (item.gallery as string[]) : []),
-        instagram_url:
-          typeof item.instagram_url === "string"
-            ? item.instagram_url
-            : typeof item.instagramUrl === "string"
-              ? item.instagramUrl
-              : null,
-        tiktok_url:
-          typeof item.tiktok_url === "string"
-            ? item.tiktok_url
-            : typeof item.tiktokUrl === "string"
-              ? item.tiktokUrl
-              : null,
-        is_solo_friendly: null,
-        google_place_id: null,
-        google_rating: null,
-        google_rating_count: null,
-        latitude: null,
-        longitude: null,
-      } satisfies RestaurantRow;
-    });
-  } catch {
+
+    const ids = data
+      .map((item: Record<string, unknown>) =>
+        typeof item.id === "number" ? item.id : Number(item.id) || 0,
+      )
+      .filter((id: number) => id > 0);
+
+    if (!supabase || ids.length === 0) return [];
+
+    const { data: rows, error } = await supabase
+      .from("restaurants")
+      .select("*, latitude, longitude")
+      .in("id", ids);
+
+    if (error || !rows) {
+      console.error("loadSavedRestaurants supabase error:", error);
+      return [];
+    }
+
+    const byId = new Map<number, RestaurantRow>(
+      (rows as RestaurantRow[]).map((r) => [r.id, r]),
+    );
+
+    return ids
+      .map((id) => byId.get(id))
+      .filter((r): r is RestaurantRow => Boolean(r));
+  } catch (err) {
+    console.error("loadSavedRestaurants error:", err);
     return [];
   }
 }
@@ -435,7 +425,16 @@ export default function Home() {
   };
 
   useEffect(() => {
-    setSavedRestaurants(loadSavedRestaurants());
+    let cancelled = false;
+    (async () => {
+      const rows = await loadSavedRestaurants();
+      if (!cancelled) {
+        setSavedRestaurants(rows);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
