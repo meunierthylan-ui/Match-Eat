@@ -176,7 +176,7 @@ function FavoritesMap({
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds);
     }
-  }, [restaurants]);
+  }, [restaurants, onOpenDrawer]);
 
   if (restaurants.length === 0) return null;
 
