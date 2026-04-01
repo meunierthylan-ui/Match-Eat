@@ -143,52 +143,37 @@ function FavoritesMap({ restaurants }: { restaurants: RestaurantRow[] }) {
     });
 
     const bounds = new g.maps.LatLngBounds();
-    const withPlaceId = restaurants.filter((r) => r.google_place_id);
-    if (withPlaceId.length === 0) return;
+    const withCoords = restaurants.filter(
+      (r) =>
+        typeof r.latitude === "number" &&
+        typeof r.longitude === "number" &&
+        !Number.isNaN(r.latitude) &&
+        !Number.isNaN(r.longitude),
+    );
+    if (withCoords.length === 0) return;
 
-    const service = new g.maps.places.PlacesService(map);
+    withCoords.forEach((restaurant) => {
+      const position = { lat: restaurant.latitude, lng: restaurant.longitude };
+      const marker = new g.maps.Marker({
+        map,
+        position,
+        title: restaurant.name,
+      });
 
-    withPlaceId.forEach((restaurant) => {
-      const placeId = restaurant.google_place_id;
-      if (!placeId) return;
+      const infoWindow = new g.maps.InfoWindow({
+        content: `<div style="font-size:13px;font-weight:600;">${restaurant.name}</div>`,
+      });
 
-      service.getDetails(
-        {
-          placeId,
-          fields: ["geometry", "name"],
-        },
-        (place: any, status: string) => {
-          if (status !== g.maps.places.PlacesServiceStatus.OK) return;
-          const location = place?.geometry?.location;
-          if (!location) return;
+      marker.addListener("click", () => {
+        infoWindow.open({ anchor: marker, map, shouldFocus: false });
+      });
 
-          const marker = new g.maps.Marker({
-            map,
-            position: location,
-            title: restaurant.name,
-          });
-
-          const mapsUrl = getMapsUrl(restaurant);
-          const infoWindow = new g.maps.InfoWindow({
-            content: `
-              <div style="font-size:13px;">
-                <div style="font-weight:600;margin-bottom:4px;">${restaurant.name}</div>
-                <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#4ade80;text-decoration:none;">
-                  Y aller
-                </a>
-              </div>
-            `,
-          });
-
-          marker.addListener("click", () => {
-            infoWindow.open({ anchor: marker, map, shouldFocus: false });
-          });
-
-          bounds.extend(location);
-          map.fitBounds(bounds);
-        },
-      );
+      bounds.extend(position);
     });
+
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds);
+    }
   }, [restaurants]);
 
   if (restaurants.length === 0) return null;
@@ -276,6 +261,8 @@ function loadSavedRestaurants(): RestaurantRow[] {
         google_place_id: null,
         google_rating: null,
         google_rating_count: null,
+        latitude: null,
+        longitude: null,
       } satisfies RestaurantRow;
     });
   } catch {
@@ -322,7 +309,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from("restaurants")
         .select(
-          "id, name, cuisine, price_range, district, photos, is_solo_friendly, google_rating, google_rating_count",
+          "id, name, cuisine, price_range, district, photos, is_solo_friendly, google_rating, google_rating_count, latitude, longitude",
         );
       if (cancelled) return;
       if (error) {

@@ -13,4 +13,6 @@ export interface RestaurantRow {
   google_place_id: string | null;
   google_rating: number | null;
   google_rating_count: number | null;
+  latitude: number | null;
+  longitude: number | null;
 }
