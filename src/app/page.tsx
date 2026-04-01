@@ -169,13 +169,19 @@ function FavoritesMap({
 
     const map = mapInstanceRef.current;
     const bounds = new g.maps.LatLngBounds();
-    const withCoords = restaurants.filter(
-      (r) =>
-        typeof r.latitude === "number" &&
-        typeof r.longitude === "number" &&
-        !Number.isNaN(r.latitude) &&
-        !Number.isNaN(r.longitude),
-    );
+    const withCoords = restaurants
+      .map((r) => ({
+        ...r,
+        latitude: Number(r.latitude),
+        longitude: Number(r.longitude),
+      }))
+      .filter(
+        (r) =>
+          !Number.isNaN(r.latitude) &&
+          !Number.isNaN(r.longitude) &&
+          r.latitude !== 0 &&
+          r.longitude !== 0,
+      );
     if (withCoords.length === 0) return;
 
     withCoords.forEach((restaurant) => {
