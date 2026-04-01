@@ -160,8 +160,16 @@ function FavoritesMap({ restaurants }: { restaurants: RestaurantRow[] }) {
         title: restaurant.name,
       });
 
+      const mapsUrl = getMapsUrl(restaurant);
       const infoWindow = new g.maps.InfoWindow({
-        content: `<div style="font-size:13px;font-weight:600;">${restaurant.name}</div>`,
+        content: `
+          <div style="padding:8px;font-size:13px;">
+            <strong>${restaurant.name}</strong><br/>
+            <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#4ade80;text-decoration:none;">
+              Y aller
+            </a>
+          </div>
+        `,
       });
 
       marker.addListener("click", () => {
