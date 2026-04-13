@@ -41,6 +41,14 @@ function shuffleArray<T>(arr: T[]): T[] {
 
 /** Filtre avec les noms de colonnes SQL (price_range, district, cuisine array). */
 function filterRestaurants(list: RestaurantRow[], filters: FilterState): RestaurantRow[] {
+  const cuisineGroups: Record<string, string[]> = {
+    "Français": ["français", "bistrot", "brasserie"],
+    "Italien": ["italien", "pizza"],
+    "Japonais": ["japonais", "sushi", "ramen"],
+    "Asiatique": ["asiatique", "chinois", "vietnamien", "thaï", "coréen"],
+    "Végétarien": ["végétarien", "vegan"],
+  };
+
   return list.filter((r) => {
     if (Array.isArray(filters.prix) && filters.prix.length > 0) {
       const level = getPriceLevel(r.price_range ?? "");
@@ -49,21 +57,12 @@ function filterRestaurants(list: RestaurantRow[], filters: FilterState): Restaur
     if (Array.isArray(filters.cuisine) && filters.cuisine.length > 0) {
       const cuisineArr = Array.isArray(r.cuisine) ? r.cuisine : [];
       const descCuisine = cuisineArr.map((c) => (c ?? "").toLowerCase()).join(" ");
-      const match = filters.cuisine.some((c) =>
-        descCuisine.includes((c ?? "").toLowerCase())
-      );
+      const match = filters.cuisine.some((c) => {
+        const selected = (c ?? "").toLowerCase();
+        const expanded = cuisineGroups[c] ?? [selected];
+        return expanded.some((alias) => descCuisine.includes(alias.toLowerCase()));
+      });
       if (!match) return false;
-    }
-    if (Array.isArray(filters.ambiance) && filters.ambiance.length > 0) {
-      const desc = r.description?.toLowerCase() ?? "";
-      // La description est chargée à l'ouverture du détail : on n'applique
-      // ce filtre que si la description est disponible dans la ligne listée.
-      if (desc) {
-        const match = filters.ambiance.some((a) =>
-          desc.includes((a ?? "").toLowerCase())
-        );
-        if (!match) return false;
-      }
     }
     if (Array.isArray(filters.arrondissement) && filters.arrondissement.length > 0) {
       const districtMatch = (r.district ?? "").match(/\d+/);
@@ -203,7 +202,6 @@ async function loadSavedRestaurants(): Promise<RestaurantRow[]> {
 const initialFilters: FilterState = {
   prix: [],
   cuisine: [],
-  ambiance: [],
   arrondissement: [],
 };
 
@@ -755,7 +753,6 @@ export default function Home() {
             <div className="mt-auto pt-8">
               {(filters.prix.length > 0 ||
                 filters.cuisine.length > 0 ||
-                filters.ambiance.length > 0 ||
                 filters.arrondissement.length > 0) && (
                 <button
                   type="button"

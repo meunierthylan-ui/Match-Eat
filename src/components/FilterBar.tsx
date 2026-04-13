@@ -2,29 +2,20 @@
 
 export const PRIX_OPTIONS = ["€", "€€", "€€€", "€€€€"] as const;
 export const CUISINE_OPTIONS = [
-  "Italien",
   "Français",
+  "Italien",
   "Japonais",
-  "Moyen-Oriental",
+  "Steakhouse",
+  "Libanais",
+  "Asiatique",
+  "Indien",
+  "Végétarien",
+  "Fruits de mer",
+  "Burger",
   "Brunch",
+  "Mexicain",
   "Gastronomique",
-  "Breton",
-  "Boulangerie",
-] as const;
-export const AMBIANCE_OPTIONS = [
-  "Chic",
-  "Traditionnel",
-  "Insolite",
-  "Luxe",
-  "Décontracté",
-  "Gastronomique",
-  "Typique",
-  "Historique",
-  "Secret",
-  "Prestige",
-  "Gourmand",
-  "Rooftop",
-  "Spectacle",
+  "Grec",
 ] as const;
 
 export const ARRONDISSEMENT_OPTIONS = [
@@ -53,7 +44,6 @@ export const ARRONDISSEMENT_OPTIONS = [
 export interface FilterState {
   prix: string[];
   cuisine: string[];
-  ambiance: string[];
   arrondissement: string[];
 }
 
@@ -133,22 +123,6 @@ export default function FilterBar({ filters, onFilterChange }: FilterBarProps) {
               label={c}
               active={filters.cuisine.includes(c)}
               onClick={() => onFilterChange("cuisine", c)}
-            />
-          ))}
-        </div>
-      </div>
-      {/* Ambiance */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 shrink-0 text-xs font-medium uppercase tracking-wider text-white/50">
-          Ambiance
-        </span>
-        <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {AMBIANCE_OPTIONS.map((a) => (
-            <Pill
-              key={a}
-              label={a}
-              active={filters.ambiance.includes(a)}
-              onClick={() => onFilterChange("ambiance", a)}
             />
           ))}
         </div>
