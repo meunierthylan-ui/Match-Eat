@@ -133,6 +133,11 @@ function FavoritesMap({
   onOpenDrawer: (restaurant: RestaurantRow) => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const onOpenDrawerRef = useRef(onOpenDrawer);
+
+  useEffect(() => {
+    onOpenDrawerRef.current = onOpenDrawer;
+  }, [onOpenDrawer]);
   
   useEffect(() => {
     if (!mapRef.current) return;
@@ -158,12 +163,12 @@ function FavoritesMap({
     withCoords.forEach((restaurant) => {
       const position = { lat: restaurant.latitude, lng: restaurant.longitude };
       const marker = new g.maps.Marker({ map, position, title: restaurant.name });
-      marker.addListener("click", () => onOpenDrawer(restaurant));
+      marker.addListener("click", () => onOpenDrawerRef.current(restaurant));
       bounds.extend(position);
     });
 
     if (!bounds.isEmpty()) map.fitBounds(bounds);
-  }, [restaurants, onOpenDrawer]);
+  }, [restaurants]);
 
   if (restaurants.length === 0) return null;
 
@@ -707,7 +712,7 @@ export default function Home() {
                 {showFavoritesMap && (
                   <FavoritesMap
                     restaurants={savedRestaurants}
-                    onOpenDrawer={(restaurant) => openRestaurantDetails(restaurant)}
+                    onOpenDrawer={openRestaurantDetails}
                   />
                 )}
                 <div className="grid grid-cols-2 gap-3">
