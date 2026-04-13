@@ -7,7 +7,6 @@ import { RotateCcw } from "lucide-react";
 import confetti from "canvas-confetti";
 import { supabase } from "@/lib/supabase";
 import FilterBar, { type FilterState } from "@/components/FilterBar";
-import MatchOverlay from "@/components/MatchOverlay";
 import RestaurantDrawer from "@/components/RestaurantDrawer";
 import SwipeCard, { CardFace } from "@/components/SwipeCard";
 import type { RestaurantRow } from "@/types/database.types";
@@ -226,7 +225,6 @@ export default function Home() {
   const [selectedRestaurantForDetails, setSelectedRestaurantForDetails] = useState<RestaurantRow | null>(null);
   const [groupRestaurants, setGroupRestaurants] = useState<RestaurantRow[]>([]);
   const [groupVotes, setGroupVotes] = useState<Record<number, string[]>>({});
-  const [groupMatchRestaurant, setGroupMatchRestaurant] = useState<RestaurantRow | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [showFavoritesMap, setShowFavoritesMap] = useState(false);
 
@@ -324,7 +322,6 @@ export default function Home() {
     setGroupReadyCount(0);
     setGroupRestaurants([]);
     setGroupVotes({});
-    setGroupMatchRestaurant(null);
     setGroupWaitingMessage(null);
     setGroupError(null);
     setJoinCodeInput("");
@@ -511,16 +508,7 @@ export default function Home() {
           setGroupVotes((prev) => {
             const existing = prev[restaurantId] ?? [];
             if (existing.includes(voter)) return prev;
-            const updated = { ...prev, [restaurantId]: [...existing, voter] };
-            const voteCount = updated[restaurantId].length;
-            if (voteCount >= 2) {
-              const matched = groupRestaurants.find((r) => r.id === restaurantId) ?? null;
-              if (matched) {
-                setGroupMatchRestaurant(matched);
-                setTimeout(() => setGroupMatchRestaurant(null), 2200);
-              }
-            }
-            return updated;
+            return { ...prev, [restaurantId]: [...existing, voter] };
           });
         },
       )
@@ -530,7 +518,7 @@ export default function Home() {
       isActive = false;
       sb.removeChannel(channel);
     };
-  }, [groupCode, groupRestaurants, hydrateGroupRestaurants, view]);
+  }, [groupCode, hydrateGroupRestaurants, view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1404,7 +1392,6 @@ export default function Home() {
               </div>
             </motion.div>
           )}
-          <MatchOverlay groupMatch={groupMatchRestaurant} />
         </section>
         <RestaurantDrawer
           restaurant={selectedRestaurantForDetails}
