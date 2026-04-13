@@ -65,10 +65,10 @@ function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-amber-400/50 ${
+      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#E07050]/40 ${
         active
-          ? "bg-amber-400/90 text-black shadow-[0_0_14px_rgba(251,191,36,0.35)]"
-          : "bg-white/10 text-white/85 hover:bg-white/20"
+          ? "border-[#C2401A] bg-[#C2401A] text-white"
+          : "border-[#F5C4A0] bg-[#FFEEE6] text-[#C2401A] hover:bg-[#FDE2D4]"
       }`}
     >
       {label}
@@ -81,7 +81,7 @@ export default function FilterBar({ filters, onFilterChange }: FilterBarProps) {
     <div className="flex flex-col gap-3 py-3">
       {/* Prix */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 shrink-0 text-xs font-medium uppercase tracking-wider text-white/50">
+        <span className="mr-1 shrink-0 text-xs font-medium uppercase tracking-wider text-[#8B4A2A]">
           Prix
         </span>
         <div className="flex flex-wrap gap-2">
@@ -97,7 +97,7 @@ export default function FilterBar({ filters, onFilterChange }: FilterBarProps) {
       </div>
       {/* Arrondissement */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 shrink-0 text-xs font-medium uppercase tracking-wider text-white/50">
+        <span className="mr-1 shrink-0 text-xs font-medium uppercase tracking-wider text-[#8B4A2A]">
           Arrondissement
         </span>
         <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -113,7 +113,7 @@ export default function FilterBar({ filters, onFilterChange }: FilterBarProps) {
       </div>
       {/* Cuisine */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 shrink-0 text-xs font-medium uppercase tracking-wider text-white/50">
+        <span className="mr-1 shrink-0 text-xs font-medium uppercase tracking-wider text-[#8B4A2A]">
           Cuisine
         </span>
         <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 scrollbar-none">

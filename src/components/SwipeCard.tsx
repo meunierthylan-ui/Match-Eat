@@ -31,7 +31,7 @@ export function CardFace({ restaurant }: { restaurant: RestaurantRow }) {
   const googleRating =
     typeof restaurant.google_rating === "number" ? restaurant.google_rating.toFixed(1) : null;
   return (
-    <div className="relative h-full w-full overflow-hidden bg-neutral-900">
+    <div className="relative h-full w-full overflow-hidden bg-[#FFEEE6]">
       {image ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
@@ -44,16 +44,16 @@ export function CardFace({ restaurant }: { restaurant: RestaurantRow }) {
       )}
       {/* Dégradé du bas vers le haut, remonte assez pour couvrir tout le texte */}
       <div
-        className="absolute inset-0 z-[2] bg-gradient-to-t from-black/95 via-black/60 to-transparent"
+        className="absolute inset-0 z-[2] bg-gradient-to-t from-[#1A0A00]/85 via-[#1A0A00]/45 to-transparent"
         aria-hidden
       />
       {/* Bloc texte (Nom + Infos) : espacement resserré (gap-1), au-dessus du badge */}
       <div className="absolute bottom-[80px] left-0 right-0 z-[3] flex flex-col gap-1 p-5 pt-20">
-        <h2 className="text-xl font-bold text-white drop-shadow-md">{restaurant.name}</h2>
-        <p className="text-xs text-neutral-400">
+        <h2 className="text-xl font-bold text-[#FFF6F0] drop-shadow-md">{restaurant.name}</h2>
+        <p className="text-xs text-[#F5C4A0]">
           {cuisineLabel} &#8226; {priceLabel}
           {googleRating != null && (
-            <span className="text-[10px] text-neutral-500">
+            <span className="text-[10px] text-[#FFEEE6]">
               {" "}
               · ⭐ {googleRating}
             </span>
@@ -79,11 +79,11 @@ export function CardFace({ restaurant }: { restaurant: RestaurantRow }) {
             );
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="pointer-events-auto flex min-h-[40px] w-fit max-w-[calc(100%-2rem)] cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-black/90 px-3 py-1.5 text-xs text-white shadow-lg transition hover:scale-105 hover:bg-black/95 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40"
+          className="pointer-events-auto flex min-h-[40px] w-fit max-w-[calc(100%-2rem)] cursor-pointer items-center gap-2 rounded-full border border-[#F5C4A0] bg-[#FFF6F0] px-3 py-1.5 text-xs text-[#1A0A00] shadow-lg transition hover:scale-105 hover:bg-[#FFEEE6] active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#E07050]/40"
         >
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} aria-hidden />
+          <MapPin className="h-3.5 w-3.5 shrink-0 text-[#C2401A]" strokeWidth={2} aria-hidden />
           <span className="min-w-0 truncate">{addressLabel}</span>
-          <ExternalLink className="h-3 w-3 shrink-0 text-white/60" strokeWidth={2} aria-hidden />
+          <ExternalLink className="h-3 w-3 shrink-0 text-[#8B4A2A]" strokeWidth={2} aria-hidden />
         </a>
       </div>
     </div>

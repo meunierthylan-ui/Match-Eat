@@ -591,9 +591,9 @@ export default function Home() {
   // Loader pendant la récupération des restaurants
   if (restaurantsLoading) {
     return (
-      <div className="min-h-screen bg-black font-sans text-white flex flex-col items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" aria-hidden />
-        <p className="mt-4 text-sm text-white/70">Chargement des restaurants…</p>
+      <div className="min-h-screen bg-[#FFF6F0] font-sans text-[#1A0A00] flex flex-col items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E07050] border-t-transparent" aria-hidden />
+        <p className="mt-4 text-sm text-[#8B4A2A]">Chargement des restaurants…</p>
       </div>
     );
   }
@@ -601,7 +601,7 @@ export default function Home() {
   // Écran d'accueil
   if (view === "home") {
     return (
-      <div className="min-h-screen bg-black font-sans text-white">
+      <div className="min-h-screen bg-[#FFF6F0] font-sans text-[#1A0A00]">
         <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center overflow-y-auto px-6 py-8 sm:max-w-lg">
           <motion.div
             className="flex flex-col items-center gap-3 text-center"
@@ -609,39 +609,39 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-4xl font-bold tracking-tight text-transparent drop-shadow-[0_0_20px_rgba(251,191,36,0.3)] sm:text-5xl">
+            <h1 className="bg-gradient-to-r from-[#C2401A] via-[#E07050] to-[#C2401A] bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
               Match & Eat
             </h1>
-            <p className="text-lg text-white/70 sm:text-xl">
-              Où dîne-t-on à Paris ce soir ?
+            <p className="text-lg text-[#8B4A2A] sm:text-xl">
+              Où dîne-t-on  ce soir ?
             </p>
           </motion.div>
           <div className="mt-14 flex w-full max-w-[320px] flex-col gap-4 sm:max-w-[360px]">
             <motion.button
               type="button"
               onClick={() => setView("setup_solo")}
-              className="group flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-950/50 to-black py-6 shadow-[0_0_30px_rgba(251,191,36,0.08)] transition hover:border-amber-400/60 hover:shadow-[0_0_40px_rgba(251,191,36,0.15)] active:scale-[0.98]"
+              className="group flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl border border-[#F5C4A0] bg-[#FFEEE6] py-6 transition hover:bg-[#FDE2D4] active:scale-[0.98]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, duration: 0.4 }}
             >
-              <span className="text-amber-300/90 group-hover:text-amber-200">
+              <span className="text-[#C2401A]">
                 <IconUser />
               </span>
-              <span className="text-lg font-semibold text-white">Manger seul</span>
+              <span className="text-lg font-semibold text-[#1A0A00]">Manger seul</span>
             </motion.button>
             <motion.button
               type="button"
               onClick={() => setView("group")}
-              className="group flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-950/50 to-black py-6 shadow-[0_0_30px_rgba(251,191,36,0.08)] transition hover:border-amber-400/60 hover:shadow-[0_0_40px_rgba(251,191,36,0.15)] active:scale-[0.98]"
+              className="group flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl border border-[#F5C4A0] bg-[#FFEEE6] py-6 transition hover:bg-[#FDE2D4] active:scale-[0.98]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.4 }}
             >
-              <span className="text-amber-300/90 group-hover:text-amber-200">
+              <span className="text-[#C2401A]">
                 <IconUsers />
               </span>
-              <span className="text-lg font-semibold text-white">Décider à plusieurs</span>
+              <span className="text-lg font-semibold text-[#1A0A00]">Décider à plusieurs</span>
             </motion.button>
           </div>
 
@@ -653,9 +653,9 @@ export default function Home() {
             transition={{ delay: 0.35, duration: 0.4 }}
           >
             <div className="flex items-center justify-between gap-2 px-1">
-              <h2 className="text-sm font-medium text-white/80">Mes Favoris</h2>
+              <h2 className="text-sm font-medium text-[#8B4A2A]">Mes Favoris</h2>
               {savedRestaurants.length > 0 && (
-                <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-300/90 ring-1 ring-amber-500/30">
+                <span className="rounded-full bg-[#FFEEE6] px-2.5 py-0.5 text-xs font-medium text-[#C2401A] ring-1 ring-[#F5C4A0]">
                   {savedRestaurants.length}
                 </span>
               )}
@@ -668,7 +668,7 @@ export default function Home() {
                       type="button"
                       key={`${restaurant.id}-${index}`}
                       onClick={() => setView("favorites")}
-                      className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-md transition hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(251,191,36,0.1)] active:scale-[0.98]"
+                      className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[#F5C4A0] bg-[#FFEEE6] shadow-md transition hover:border-[#E07050] active:scale-[0.98]"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       {getPrimaryPhoto(restaurant) ? (
@@ -687,13 +687,13 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setView("favorites")}
-                  className="mt-2 w-full rounded-xl border border-white/15 bg-white/5 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10"
+                  className="mt-2 w-full rounded-xl border border-[#F5C4A0] bg-[#FFEEE6] py-2.5 text-sm font-medium text-[#C2401A] transition hover:bg-[#FDE2D4]"
                 >
                   Voir tout
                 </button>
               </>
             ) : (
-              <p className="mt-2 text-xs text-white/50">Aucun favori pour le moment.</p>
+              <p className="mt-2 text-xs text-[#8B4A2A]">Aucun favori pour le moment.</p>
             )}
           </motion.section>
         </main>
@@ -714,30 +714,30 @@ export default function Home() {
     };
 
     return (
-      <div className="min-h-screen bg-black font-sans text-white">
+      <div className="min-h-screen bg-[#FFF6F0] font-sans text-[#1A0A00]">
         <main className="mx-auto flex min-h-screen max-w-md flex-col sm:max-w-lg">
           <header className="shrink-0 px-4 pt-4">
             <div className="flex items-center gap-3 pb-2">
               <button
                 type="button"
                 onClick={() => { setSetupNoResultsAlert(false); setView("home"); }}
-                className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
+                className="flex items-center gap-1.5 rounded-full border border-[#F5C4A0] bg-[#FFEEE6] px-3 py-2 text-sm font-medium text-[#C2401A] transition hover:bg-[#FDE2D4]"
                 aria-label="Retour"
               >
                 <IconBack />
                 <span>Retour</span>
               </button>
             </div>
-            <h1 className="py-2 text-center text-xl font-semibold tracking-tight text-white">
+            <h1 className="py-2 text-center text-xl font-semibold tracking-tight text-[#1A0A00]">
               Manger seul
             </h1>
           </header>
 
           <section className="flex flex-1 flex-col overflow-y-auto px-4 pb-6">
-            <h2 className="mb-4 pt-2 text-center text-lg font-medium text-amber-200/95">
+            <h2 className="mb-4 pt-2 text-center text-lg font-medium text-[#8B4A2A]">
               Tes envies du moment
             </h2>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg">
+            <div className="rounded-2xl border border-[#F5C4A0] bg-[#FFEEE6] p-4 shadow-lg">
               <FilterBar filters={filters} onFilterChange={handleFilterChange} />
             </div>
 
@@ -745,7 +745,7 @@ export default function Home() {
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-center text-sm text-amber-200"
+                className="mt-4 rounded-xl border border-[#F5C4A0] bg-[#FFEEE6] px-4 py-3 text-center text-sm text-[#8B4A2A]"
               >
                 Aucun resto trouvé avec ces critères, élargis ta recherche !
               </motion.p>
@@ -762,7 +762,7 @@ export default function Home() {
                     setCardIndex(0);
                     setSetupNoResultsAlert(false);
                   }}
-                  className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium text-white/50 transition hover:text-white"
+                  className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium text-[#8B4A2A] transition hover:text-[#1A0A00]"
                   aria-label="Réinitialiser les filtres"
                 >
                   <RotateCcw className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -772,7 +772,7 @@ export default function Home() {
               <motion.button
                 type="button"
                 onClick={handleLaunchSearch}
-                className="w-full rounded-2xl bg-amber-500 py-4 text-lg font-semibold text-black shadow-[0_0_24px_rgba(251,191,36,0.25)] transition hover:bg-amber-400 active:scale-[0.99]"
+                className="w-full rounded-2xl bg-[#C2401A] py-4 text-lg font-semibold text-white transition hover:bg-[#E07050] active:scale-[0.99]"
               >
                 Lancer la recherche
               </motion.button>
@@ -786,14 +786,14 @@ export default function Home() {
   // Vue Favoris (grille complète des restos enregistrés)
   if (view === "favorites") {
     return (
-      <div className="min-h-screen bg-black font-sans text-white">
+      <div className="min-h-screen bg-[#FFF6F0] font-sans text-[#1A0A00]">
         <main className="mx-auto flex min-h-screen max-w-md flex-col sm:max-w-lg">
           <header className="shrink-0 px-4 pt-4">
             <div className="flex items-center justify-between gap-3 pb-2">
               <button
                 type="button"
                 onClick={() => setView("home")}
-                className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
+                className="flex items-center gap-1.5 rounded-full border border-[#F5C4A0] bg-[#FFEEE6] px-3 py-2 text-sm font-medium text-[#C2401A] transition hover:bg-[#FDE2D4]"
                 aria-label="Retour au menu"
               >
                 <IconBack />
@@ -803,19 +803,19 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setShowFavoritesMap((v) => !v)}
-                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-200 transition hover:bg-amber-500/20"
+                  className="rounded-full border border-[#F5C4A0] bg-[#FFEEE6] px-3 py-1.5 text-xs font-medium text-[#C2401A] transition hover:bg-[#FDE2D4]"
                 >
                   {showFavoritesMap ? "Masquer la carte" : "Voir sur la carte"}
                 </button>
               )}
             </div>
-            <h1 className="py-2 text-center text-xl font-semibold tracking-tight text-white">
+            <h1 className="py-2 text-center text-xl font-semibold tracking-tight text-[#1A0A00]">
               Mes Favoris
             </h1>
           </header>
           <section className="flex-1 overflow-y-auto px-4 pb-8">
             {savedRestaurants.length === 0 ? (
-              <p className="py-12 text-center text-white/60">Aucun restaurant enregistré.</p>
+              <p className="py-12 text-center text-[#8B4A2A]">Aucun restaurant enregistré.</p>
             ) : (
               <>
                 {showFavoritesMap && (
@@ -833,7 +833,7 @@ export default function Home() {
                     return (
                       <motion.article
                         key={`${restaurant.id}-${index}`}
-                        className="overflow-hidden rounded-xl bg-white/5 shadow-lg"
+                        className="overflow-hidden rounded-xl bg-[#FFEEE6] shadow-lg"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: index * 0.04, duration: 0.3 }}
@@ -856,13 +856,13 @@ export default function Home() {
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                             <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <h3 className="truncate text-sm font-semibold text-white drop-shadow-md">
+                              <h3 className="truncate text-sm font-semibold text-[#1A0A00] drop-shadow-md">
                                 {restaurant.name}
                               </h3>
-                              <p className="truncate text-[11px] text-white/80">
+                              <p className="truncate text-[11px] text-[#8B4A2A]">
                                 {restaurant.cuisine.join(", ") || "Restaurant"}
                               </p>
-                              <p className="truncate text-[11px] text-white/70">
+                              <p className="truncate text-[11px] text-[#8B4A2A]">
                                 {restaurant.price_range ?? "€€"}
                                 {googleRating != null && <> · ⭐ {googleRating}</>}
                               </p>
@@ -871,7 +871,7 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => handleRemoveFavorite(restaurant.id)}
-                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-[11px] text-white hover:bg-black/90"
+                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#C2401A] text-[11px] text-white hover:bg-[#E07050]"
                             aria-label="Retirer des favoris"
                           >
                             ✕
@@ -915,21 +915,21 @@ export default function Home() {
   // ——— Vue Groupe : choix Créer / Rejoindre ———
   if (view === "group" && groupStep !== "swipe") {
     return (
-      <div className="min-h-screen bg-black font-sans text-white">
+      <div className="min-h-screen bg-[#FFF6F0] font-sans text-[#1A0A00]">
         <main className="mx-auto flex min-h-screen max-w-md flex-col sm:max-w-lg">
           <header className="shrink-0 px-4 pt-4">
             <div className="flex items-center gap-3 pb-2">
               <button
                 type="button"
                 onClick={() => (groupStep === "choose" ? goHome() : goToGroupChoose())}
-                className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-2 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
+                className="flex items-center gap-1.5 rounded-full border border-[#F5C4A0] bg-[#FFEEE6] px-3 py-2 text-sm font-medium text-[#C2401A] transition hover:bg-[#FDE2D4]"
                 aria-label="Retour"
               >
                 <IconBack />
                 <span>Retour</span>
               </button>
             </div>
-            <h1 className="py-2 text-center text-xl font-semibold tracking-tight text-white">
+            <h1 className="py-2 text-center text-xl font-semibold tracking-tight text-[#1A0A00]">
               Décider à plusieurs
             </h1>
           </header>
@@ -949,16 +949,16 @@ export default function Home() {
                     setGroupError(null);
                     void createGroupSession();
                   }}
-                  className="flex min-h-[72px] items-center justify-center gap-3 rounded-2xl border border-amber-500/40 bg-white/5 py-4 transition hover:bg-white/10"
+                  className="flex min-h-[72px] items-center justify-center gap-3 rounded-2xl border border-[#F5C4A0] bg-[#FFEEE6] py-4 transition hover:bg-[#FDE2D4]"
                 >
-                  <span className="text-lg font-semibold text-white">Créer un groupe</span>
+                  <span className="text-lg font-semibold text-[#1A0A00]">Créer un groupe</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setGroupStep("join")}
-                  className="flex min-h-[72px] items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/5 py-4 transition hover:bg-white/10"
+                  className="flex min-h-[72px] items-center justify-center gap-3 rounded-2xl border border-[#F5C4A0] bg-[#FFEEE6] py-4 transition hover:bg-[#FDE2D4]"
                 >
-                  <span className="text-lg font-semibold text-white">Rejoindre un groupe</span>
+                  <span className="text-lg font-semibold text-[#1A0A00]">Rejoindre un groupe</span>
                 </button>
               </motion.div>
             )}
@@ -970,7 +970,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <p className="text-center text-white/80">
+                <p className="text-center text-[#8B4A2A]">
                   Création de la session en cours...
                 </p>
               </motion.div>
@@ -983,7 +983,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <label className="text-sm text-white/70" htmlFor="group-code">
+                <label className="text-sm text-[#8B4A2A]" htmlFor="group-code">
                   Code à 4 chiffres
                 </label>
                 <input
@@ -994,12 +994,12 @@ export default function Home() {
                   placeholder="0000"
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-center text-2xl tracking-[0.3em] text-white placeholder:text-white/40"
+                  className="rounded-xl border border-[#F5C4A0] bg-[#FFEEE6] px-4 py-3 text-center text-2xl tracking-[0.3em] text-[#1A0A00] placeholder:text-[#8B4A2A]"
                 />
                 <button
                   type="button"
                   onClick={() => { void joinGroupSession(); }}
-                  className="w-full rounded-2xl bg-amber-500 py-3.5 font-semibold text-black transition hover:bg-amber-400"
+                  className="w-full rounded-2xl bg-[#C2401A] py-3.5 font-semibold text-white transition hover:bg-[#E07050]"
                 >
                   Rejoindre
                 </button>
@@ -1013,13 +1013,13 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <p className="text-center text-white/80">Partage ce code avec tes amis</p>
-                <div className="rounded-2xl border-2 border-amber-500/50 bg-black/50 px-8 py-4">
-                  <span className="text-4xl font-bold tracking-[0.4em] text-amber-200">
+                <p className="text-center text-[#8B4A2A]">Partage ce code avec tes amis</p>
+                <div className="rounded-2xl border-2 border-[#F5C4A0] bg-[#FFEEE6] px-8 py-4">
+                  <span className="text-4xl font-bold tracking-[0.4em] text-[#C2401A]">
                     {groupCode}
                   </span>
                 </div>
-                <p className="text-sm text-white/60">
+                <p className="text-sm text-[#8B4A2A]">
                   {groupReadyCount} personne{groupReadyCount > 1 ? "s" : ""} prête
                   {groupReadyCount > 1 ? "s" : ""}
                 </p>
@@ -1027,7 +1027,7 @@ export default function Home() {
                   type="button"
                   disabled={groupReadyCount < 2}
                   onClick={startGroupSwipe}
-                  className="w-full rounded-2xl bg-amber-500 py-3.5 font-semibold text-black transition hover:bg-amber-400 disabled:pointer-events-none disabled:opacity-40"
+                  className="w-full rounded-2xl bg-[#C2401A] py-3.5 font-semibold text-white transition hover:bg-[#E07050] disabled:pointer-events-none disabled:opacity-40"
                 >
                   Lancer le swipe
                 </button>
@@ -1045,28 +1045,28 @@ export default function Home() {
 
   // ——— Vue Solo ou Groupe (swipe) ———
   return (
-    <div className="min-h-screen bg-black font-sans text-white">
+    <div className="min-h-screen bg-[#FFF6F0] font-sans text-[#1A0A00]">
       <main className="mx-auto flex min-h-screen max-w-md flex-col sm:max-w-lg">
         <header className="absolute left-0 right-0 top-0 z-20 flex w-full flex-col gap-2 px-3 pt-3 sm:px-4 sm:pt-4">
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={goHome}
-              className="flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-2.5 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="flex items-center gap-1.5 rounded-full border border-[#F5C4A0] bg-[#FFEEE6] px-2.5 py-1.5 text-xs font-medium text-[#C2401A] transition hover:bg-[#FDE2D4]"
               aria-label="Retour au menu"
             >
               <IconBack />
               <span>Retour</span>
             </button>
             {!isEnd && isGroupSwipe && displayRestaurants.length > 0 && (
-              <span className="text-xs font-medium text-white/50" aria-live="polite">
+              <span className="text-xs font-medium text-[#8B4A2A]" aria-live="polite">
                 {Math.min(cardIndex + 1, displayRestaurants.length)}/{displayRestaurants.length}
               </span>
             )}
           </div>
           {!isEnd && isGroupSwipe && displayRestaurants.length > 0 && (
             <div
-              className="h-0.5 w-full overflow-hidden rounded-full bg-white/10"
+              className="h-0.5 w-full overflow-hidden rounded-full bg-[#F5C4A0]"
               role="progressbar"
               aria-valuenow={cardIndex + 1}
               aria-valuemin={0}
@@ -1074,7 +1074,7 @@ export default function Home() {
               aria-label="Progression des cartes"
             >
               <div
-                className="h-full rounded-full bg-amber-400/70 transition-all duration-300"
+                className="h-full rounded-full bg-[#E07050] transition-all duration-300"
                 style={{
                   width: `${((cardIndex + 1) / displayRestaurants.length) * 100}%`,
                 }}
@@ -1085,9 +1085,9 @@ export default function Home() {
         <section className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-4 pt-12 pb-20">
           {/* Priorité : si fin de pile, on n'affiche le bloc de fin (solo ou groupe). */}
           {isEnd && view === "group" && (
-            <div className="min-h-screen w-full overflow-y-auto bg-black py-12 px-4">
+            <div className="min-h-screen w-full overflow-y-auto bg-[#FFF6F0] py-12 px-4">
               <div className="flex flex-col items-center justify-center text-center">
-                <h2 className="mb-2 text-3xl font-bold text-white">Résultats du Groupe</h2>
+                <h2 className="mb-2 text-3xl font-bold text-[#1A0A00]">Résultats du Groupe</h2>
                 <p className="mb-6 text-gray-400">
                   Les matchs communs, des unanimités au reste
                 </p>
@@ -1099,14 +1099,14 @@ export default function Home() {
                       setGroupStep("choose");
                       setGroupVotes({});
                     }}
-                    className="rounded-full bg-amber-400 px-6 py-3 font-bold text-black"
+                    className="rounded-full bg-[#C2401A] px-6 py-3 font-bold text-white"
                   >
                     Recommencer
                   </button>
                   <button
                     type="button"
                     onClick={goHome}
-                    className="rounded-full border border-white/20 px-6 py-3 font-bold text-white"
+                    className="rounded-full border border-[#F5C4A0] bg-[#FFEEE6] px-6 py-3 font-bold text-[#C2401A]"
                   >
                     Retour au Menu
                   </button>
@@ -1135,14 +1135,14 @@ export default function Home() {
                     <>
                       {unanimities.length > 0 && (
                         <section>
-                          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-amber-300/90">
+                          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#C2401A]">
                             Unanimités
                           </h3>
                           <div className="space-y-3">
                             {unanimities.map(({ restaurant, votes }) => (
                               <article
                                 key={restaurant.id}
-                                className="flex items-center gap-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3"
+                                className="flex items-center gap-4 rounded-xl border border-[#F5C4A0] bg-[#FFEEE6] p-3"
                               >
                                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1158,10 +1158,10 @@ export default function Home() {
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <h4 className="truncate font-semibold text-white">
+                                  <h4 className="truncate font-semibold text-[#1A0A00]">
                                     {restaurant.name}
                                   </h4>
-                                  <p className="text-xs text-amber-200/80">
+                                  <p className="text-xs text-[#8B4A2A]">
                                     {votes} like{votes > 1 ? "s" : ""} · Tout le monde a aimé
                                   </p>
                                 </div>
@@ -1180,14 +1180,14 @@ export default function Home() {
                       )}
                       {rest.length > 0 && (
                         <section>
-                          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white/50">
+                          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#8B4A2A]">
                             Autres likes
                           </h3>
                           <div className="space-y-3">
                             {rest.map(({ restaurant, votes }) => (
                               <article
                                 key={restaurant.id}
-                                className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-3"
+                                className="flex items-center gap-4 rounded-xl border border-[#F5C4A0] bg-[#FFEEE6] p-3"
                               >
                                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1203,10 +1203,10 @@ export default function Home() {
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <h4 className="truncate font-semibold text-white">
+                                  <h4 className="truncate font-semibold text-[#1A0A00]">
                                     {restaurant.name}
                                   </h4>
-                                  <p className="text-xs text-white/60">
+                                  <p className="text-xs text-[#8B4A2A]">
                                     {votes} like{votes > 1 ? "s" : ""}
                                   </p>
                                 </div>
@@ -1231,22 +1231,22 @@ export default function Home() {
           )}
 
           {isEnd && view !== "group" && (
-            <div className="min-h-screen w-full overflow-y-auto bg-black py-12 px-4">
+            <div className="min-h-screen w-full overflow-y-auto bg-[#FFF6F0] py-12 px-4">
               <div className="flex flex-col items-center justify-center text-center">
-                <h2 className="mb-2 text-3xl font-bold text-white">Fini !</h2>
+                <h2 className="mb-2 text-3xl font-bold text-[#1A0A00]">Fini !</h2>
                 <p className="mb-8 text-gray-400">Tu as vu tous les restaurants.</p>
                 <div className="flex flex-wrap items-center justify-center gap-4">
                   <button
                     type="button"
                     onClick={restart}
-                    className="flex items-center gap-2 rounded-full bg-amber-400 px-6 py-3 font-bold text-black"
+                    className="flex items-center gap-2 rounded-full bg-[#C2401A] px-6 py-3 font-bold text-white"
                   >
                     Recommencer
                   </button>
                   <button
                     type="button"
                     onClick={() => setView("home")}
-                    className="flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 font-bold text-white"
+                    className="flex items-center gap-2 rounded-full border border-[#F5C4A0] bg-[#FFEEE6] px-6 py-3 font-bold text-[#C2401A]"
                   >
                     Retour au Menu
                   </button>
@@ -1255,7 +1255,7 @@ export default function Home() {
 
               {/* Section Bas : Coups de cœur */}
               <div className="mt-16 w-full max-w-[340px] mx-auto sm:max-w-[360px]">
-                <h3 className="mb-4 text-center text-lg font-semibold tracking-tight text-white/95">
+                <h3 className="mb-4 text-center text-lg font-semibold tracking-tight text-[#1A0A00]">
                   Tes sélections du moment
                 </h3>
                 {favorites.length > 0 ? (
@@ -1263,7 +1263,7 @@ export default function Home() {
                     {favorites.map((restaurant, index) => (
                       <article
                         key={`${restaurant.id}-${index}`}
-                        className="overflow-hidden rounded-xl bg-white/5 shadow-lg"
+                        className="overflow-hidden rounded-xl bg-[#FFEEE6] shadow-lg"
                       >
                         <div className="relative aspect-[3/4] w-full">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1279,10 +1279,10 @@ export default function Home() {
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
                           <div className="absolute bottom-0 left-0 right-0 p-3">
-                            <h4 className="truncate text-sm font-semibold text-white drop-shadow-md">
+                            <h4 className="truncate text-sm font-semibold text-[#1A0A00] drop-shadow-md">
                               {restaurant.name}
                             </h4>
-                            <p className="truncate text-xs text-white/85">
+                            <p className="truncate text-xs text-[#8B4A2A]">
                               {restaurant.district}
                             </p>
                           </div>
@@ -1323,9 +1323,9 @@ export default function Home() {
           )}
 
           {!isEnd && displayRestaurants.length === 0 && (
-            <div className="relative w-full max-w-[340px] rounded-2xl bg-white/5 px-6 py-8 text-center">
-              <p className="text-white/90">Aucun restaurant pour ces filtres.</p>
-              <p className="mt-1 text-sm text-white/60">Modifiez Prix, Cuisine ou Ambiance ci-dessus.</p>
+            <div className="relative w-full max-w-[340px] rounded-2xl bg-[#FFEEE6] px-6 py-8 text-center">
+              <p className="text-[#1A0A00]">Aucun restaurant pour ces filtres.</p>
+              <p className="mt-1 text-sm text-[#8B4A2A]">Modifiez Prix ou Cuisine ci-dessus.</p>
             </div>
           )}
           {!isEnd && displayRestaurants.length > 0 && (
@@ -1380,13 +1380,13 @@ export default function Home() {
 
           {groupWaitingMessage && view === "group" && (
             <motion.div
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1A0A00]/45"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="rounded-2xl border border-white/20 bg-black/80 px-8 py-5 shadow-xl">
-                <p className="text-lg font-medium text-white">{groupWaitingMessage}</p>
+              <div className="rounded-2xl border border-[#F5C4A0] bg-[#FFF6F0] px-8 py-5 shadow-xl">
+                <p className="text-lg font-medium text-[#1A0A00]">{groupWaitingMessage}</p>
               </div>
             </motion.div>
           )}
