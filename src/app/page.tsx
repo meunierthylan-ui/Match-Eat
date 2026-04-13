@@ -58,8 +58,9 @@ function filterRestaurants(list: RestaurantRow[], filters: FilterState): Restaur
       const cuisineArr = Array.isArray(r.cuisine) ? r.cuisine : [];
       const descCuisine = cuisineArr.map((c) => (c ?? "").toLowerCase()).join(" ");
       const match = filters.cuisine.some((c) => {
-        const selected = (c ?? "").toLowerCase();
-        const expanded = cuisineGroups[c] ?? [selected];
+        const cleaned = (c ?? "").replace(/^[^\p{L}]+/u, "").trim();
+        const selected = cleaned.toLowerCase();
+        const expanded = cuisineGroups[cleaned] ?? [selected];
         return expanded.some((alias) => descCuisine.includes(alias.toLowerCase()));
       });
       if (!match) return false;

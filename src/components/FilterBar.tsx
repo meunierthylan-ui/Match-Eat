@@ -2,20 +2,20 @@
 
 export const PRIX_OPTIONS = ["€", "€€", "€€€", "€€€€"] as const;
 export const CUISINE_OPTIONS = [
-  "Français",
-  "Italien",
-  "Japonais",
-  "Steakhouse",
-  "Libanais",
-  "Asiatique",
-  "Indien",
-  "Végétarien",
-  "Fruits de mer",
-  "Burger",
-  "Brunch",
-  "Mexicain",
-  "Gastronomique",
-  "Grec",
+  "🇫🇷 Français",
+  "🍕 Italien",
+  "🍣 Japonais",
+  "🥩 Steakhouse",
+  "🫔 Libanais",
+  "🍜 Asiatique",
+  "🍛 Indien",
+  "🥗 Végétarien",
+  "🦞 Fruits de mer",
+  "🍔 Burger",
+  "🥐 Brunch",
+  "🌮 Mexicain",
+  "⭐ Gastronomique",
+  "🫒 Grec",
 ] as const;
 
 export const ARRONDISSEMENT_OPTIONS = [
