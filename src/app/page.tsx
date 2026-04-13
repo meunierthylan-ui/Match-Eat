@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { RotateCcw } from "lucide-react";
 import confetti from "canvas-confetti";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { supabase } from "@/lib/supabase";
 import FilterBar, { type FilterState } from "@/components/FilterBar";
 import MatchOverlay from "@/components/MatchOverlay";
@@ -126,48 +126,7 @@ function getMapsUrl(restaurant: RestaurantRow): string {
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
-function FavoritesMap({
-  restaurants,
-  onOpenDrawer,
-}: {
-  restaurants: RestaurantRow[];
-  onOpenDrawer: (restaurant: RestaurantRow) => void;
-}) {
-  const { isLoaded } = useJsApiLoader({
-    id: "favorites-map-script",
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
-  });
-
-  const withCoords = restaurants
-    .map((r) => ({ ...r, lat: Number(r.latitude), lng: Number(r.longitude) }))
-    .filter((r) => r.lat && r.lng && !Number.isNaN(r.lat) && !Number.isNaN(r.lng));
-
-  if (!isLoaded || restaurants.length === 0 || withCoords.length === 0) return null;
-
-  return (
-    <div className="mb-3 h-64 w-full overflow-hidden rounded-2xl border border-white/10">
-      <GoogleMap
-        mapContainerStyle={{ width: "100%", height: "100%" }}
-        center={{ lat: 48.8566, lng: 2.3522 }}
-        zoom={13}
-        options={{
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        }}
-      >
-        {withCoords.map((r) => (
-          <Marker
-            key={r.id}
-            position={{ lat: r.lat, lng: r.lng }}
-            title={r.name}
-            onClick={() => onOpenDrawer(r)}
-          />
-        ))}
-      </GoogleMap>
-    </div>
-  );
-}
+const FavoritesMap = dynamic(() => import("./FavoritesMap"), { ssr: false });
 
 function getPrimaryPhoto(restaurant: RestaurantRow): string | null {
   return restaurant.photos?.[0] ?? null;
