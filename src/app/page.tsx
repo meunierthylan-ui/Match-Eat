@@ -133,20 +133,15 @@ function FavoritesMap({
   onOpenDrawer: (restaurant: RestaurantRow) => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const onOpenDrawerRef = useRef(onOpenDrawer);
+  const [, forceUpdate] = useState(0);
 
   useEffect(() => {
-    onOpenDrawerRef.current = onOpenDrawer;
-  }, [onOpenDrawer]);
-  
-  useEffect(() => {
-    if (!mapRef.current) return;
     const g = (window as any).google;
-    if (!g?.maps) return;
+    if (!g?.maps || !mapRef.current) return;
 
     const withCoords = restaurants
-      .map((r) => ({ ...r, latitude: Number(r.latitude), longitude: Number(r.longitude) }))
-      .filter((r) => r.latitude && r.longitude && !Number.isNaN(r.latitude) && !Number.isNaN(r.longitude));
+      .map((r) => ({ ...r, lat: Number(r.latitude), lng: Number(r.longitude) }))
+      .filter((r) => r.lat && r.lng);
 
     if (withCoords.length === 0) return;
 
@@ -160,15 +155,25 @@ function FavoritesMap({
 
     const bounds = new g.maps.LatLngBounds();
 
-    withCoords.forEach((restaurant) => {
-      const position = { lat: restaurant.latitude, lng: restaurant.longitude };
-      const marker = new g.maps.Marker({ map, position, title: restaurant.name });
-      marker.addListener("click", () => onOpenDrawerRef.current(restaurant));
-      bounds.extend(position);
+    withCoords.forEach((r) => {
+      const marker = new g.maps.Marker({
+        map,
+        position: { lat: r.lat, lng: r.lng },
+        title: r.name,
+      });
+
+      const original = restaurants.find((x) => x.id === r.id);
+      if (original) {
+        marker.addListener("click", () => {
+          onOpenDrawer(original);
+        });
+      }
+
+      bounds.extend({ lat: r.lat, lng: r.lng });
     });
 
     if (!bounds.isEmpty()) map.fitBounds(bounds);
-  }, [restaurants]);
+  }, [restaurants.map(r => r.id).join(",")]);
 
   if (restaurants.length === 0) return null;
 
