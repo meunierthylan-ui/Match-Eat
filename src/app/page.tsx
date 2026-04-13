@@ -39,28 +39,6 @@ function shuffleArray<T>(arr: T[]): T[] {
   return out;
 }
 
-/** Mélange déterministe à partir d'un seed (ex: code groupe). Même code = même ordre. */
-function seededShuffle<T>(arr: T[], seed: number): T[] {
-  const out = [...arr];
-  let s = seed;
-  for (let i = out.length - 1; i > 0; i--) {
-    s = (s * 9301 + 49297) % 233280;
-    const j = Math.floor((s / 233280) * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-const GROUP_POOL_SIZE = 10;
-
-function formatFiltersSummary(filters: FilterState): string {
-  const parts: string[] = [];
-  if (filters.cuisine?.length) parts.push(filters.cuisine.join(", "));
-  if (filters.arrondissement?.length) parts.push(filters.arrondissement.join(", "));
-  if (filters.prix?.length) parts.push(filters.prix.join(" "));
-  if (filters.ambiance?.length) parts.push(filters.ambiance.join(", "));
-  return parts.length ? parts.join(" • ") : "Tous les critères";
-}
 
 /** Filtre avec les noms de colonnes SQL (price_range, district, cuisine array). */
 function filterRestaurants(list: RestaurantRow[], filters: FilterState): RestaurantRow[] {
@@ -106,13 +84,25 @@ function filterRestaurants(list: RestaurantRow[], filters: FilterState): Restaur
 }
 
 const SAVED_FAVORITES_KEY = "match-eat-favorites";
-const GROUP_SESSION_KEY_PREFIX = "match-eat-group-";
 
 type View = "home" | "setup_solo" | "solo" | "group" | "favorites";
 type GroupStep = "choose" | "create" | "join" | "lobby" | "swipe";
+const PARTICIPANT_STORAGE_KEY = "match-eat-participant-id";
 
 function generateGroupCode(): string {
   return String(1000 + Math.floor(Math.random() * 9000));
+}
+
+function getOrCreateParticipantId(): string {
+  if (typeof window === "undefined") return "";
+  const existing = localStorage.getItem(PARTICIPANT_STORAGE_KEY);
+  if (existing) return existing;
+  const id =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  localStorage.setItem(PARTICIPANT_STORAGE_KEY, id);
+  return id;
 }
 
 const STACK_SIZE = 2;
@@ -126,7 +116,15 @@ function getMapsUrl(restaurant: RestaurantRow): string {
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
-const FavoritesMap = dynamic(() => import("./FavoritesMap"), { ssr: false });
+type FavoritesMapProps = {
+  restaurants: RestaurantRow[];
+  onOpenDrawer: (restaurant: RestaurantRow) => void;
+};
+
+const FavoritesMap = dynamic<FavoritesMapProps>(
+  () => import("@/components/FavoritesMap").then((mod) => mod.default),
+  { ssr: false },
+);
 
 function getPrimaryPhoto(restaurant: RestaurantRow): string | null {
   return restaurant.photos?.[0] ?? null;
@@ -215,6 +213,7 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState<RestaurantRow[]>([]);
   const [restaurantsLoading, setRestaurantsLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
+  const [participantId, setParticipantId] = useState("");
   const [savedRestaurants, setSavedRestaurants] = useState<RestaurantRow[]>([]);
   const [cardIndex, setCardIndex] = useState(0);
   const [favorites, setFavorites] = useState<RestaurantRow[]>([]);
@@ -222,14 +221,18 @@ export default function Home() {
   const [groupCode, setGroupCode] = useState("");
   const [groupReadyCount, setGroupReadyCount] = useState(0);
   const [groupWaitingMessage, setGroupWaitingMessage] = useState<string | null>(null);
+  const [groupError, setGroupError] = useState<string | null>(null);
   const [setupNoResultsAlert, setSetupNoResultsAlert] = useState(false);
   const [selectedRestaurantForDetails, setSelectedRestaurantForDetails] = useState<RestaurantRow | null>(null);
   const [groupRestaurants, setGroupRestaurants] = useState<RestaurantRow[]>([]);
-  const [groupVotes, setGroupVotes] = useState<Record<number, number>>({});
+  const [groupVotes, setGroupVotes] = useState<Record<number, string[]>>({});
   const [groupMatchRestaurant, setGroupMatchRestaurant] = useState<RestaurantRow | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
-  const [groupFiltersOpen, setGroupFiltersOpen] = useState(false);
   const [showFavoritesMap, setShowFavoritesMap] = useState(false);
+
+  useEffect(() => {
+    setParticipantId(getOrCreateParticipantId());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -305,46 +308,6 @@ export default function Home() {
     [displayRestaurants, cardIndex]
   );
 
-  const launchGroupSwipe = useCallback(
-    (code: string, filtersOverride?: FilterState) => {
-      const filtersToUse = filtersOverride ?? filters;
-      const filtered = filterRestaurants(restaurants, filtersToUse);
-      const poolSource = filtered.length > 0 ? filtered : restaurants;
-      const sorted = [...poolSource].sort((a, b) => a.id - b.id);
-      const seed = parseInt(code, 10) || 0;
-      const shuffled = seededShuffle(sorted, seed);
-      const pool = shuffled.slice(0, GROUP_POOL_SIZE);
-      setGroupRestaurants(pool);
-      setGroupVotes({});
-      setGroupMatchRestaurant(null);
-      setCardIndex(0);
-      setGroupStep("swipe");
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(
-            GROUP_SESSION_KEY_PREFIX + code,
-            JSON.stringify({ filters: filtersToUse })
-          );
-        } catch {
-          // ignore
-        }
-      }
-    },
-    [filters, restaurants]
-  );
-
-  const loadGroupSession = useCallback((code: string): FilterState | null => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = localStorage.getItem(GROUP_SESSION_KEY_PREFIX + code);
-      if (!raw) return null;
-      const data = JSON.parse(raw) as { filters?: FilterState };
-      return data?.filters ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
-
   const handleFilterChange = useCallback((key: keyof FilterState, value: string | null) => {
     setFilters((prev) => {
       const arr = prev[key];
@@ -359,13 +322,215 @@ export default function Home() {
     setGroupStep("choose");
     setGroupCode("");
     setGroupReadyCount(0);
-    setGroupFiltersOpen(false);
+    setGroupRestaurants([]);
+    setGroupVotes({});
+    setGroupMatchRestaurant(null);
+    setGroupWaitingMessage(null);
+    setGroupError(null);
+    setJoinCodeInput("");
+    setCardIndex(0);
   };
 
   const goHome = () => {
     setView("home");
     goToGroupChoose();
   };
+
+  const hydrateGroupRestaurants = useCallback((restaurantIds: number[]) => {
+    if (!restaurantIds.length) {
+      setGroupRestaurants([]);
+      return;
+    }
+    const byId = new Map(restaurants.map((r) => [r.id, r]));
+    const ordered = restaurantIds
+      .map((id) => byId.get(id))
+      .filter((r): r is RestaurantRow => Boolean(r));
+    setGroupRestaurants(ordered);
+  }, [restaurants]);
+
+  const createGroupSession = useCallback(async () => {
+    if (!supabase || restaurants.length === 0 || !participantId) {
+      setGroupError("Impossible de créer la session.");
+      return;
+    }
+    const sb = supabase;
+    setGroupError(null);
+    setGroupWaitingMessage("Création de la session...");
+    const shuffled = shuffleArray(restaurants);
+    const selectedIds = shuffled.slice(0, 15).map((r) => r.id);
+    if (selectedIds.length === 0) {
+      setGroupWaitingMessage(null);
+      setGroupError("Aucun restaurant disponible.");
+      return;
+    }
+    let createdCode = "";
+    for (let i = 0; i < 8; i += 1) {
+      const code = generateGroupCode();
+      const { error } = await sb.from("group_sessions").insert({
+        code,
+        restaurant_ids: selectedIds,
+      });
+      if (!error) {
+        createdCode = code;
+        break;
+      }
+    }
+    if (!createdCode) {
+      setGroupWaitingMessage(null);
+      setGroupError("Impossible de créer un code unique.");
+      return;
+    }
+    const { error: participantError } = await sb.from("group_participants").insert({
+      session_code: createdCode,
+      participant_id: participantId,
+    });
+    if (participantError) {
+      setGroupWaitingMessage(null);
+      setGroupError("Session créée, mais inscription participant échouée.");
+      return;
+    }
+    setGroupCode(createdCode);
+    hydrateGroupRestaurants(selectedIds);
+    setGroupVotes({});
+    setGroupReadyCount(1);
+    setCardIndex(0);
+    setGroupStep("lobby");
+    setGroupWaitingMessage(null);
+  }, [hydrateGroupRestaurants, participantId, restaurants]);
+
+  const joinGroupSession = useCallback(async () => {
+    if (!supabase || !participantId) {
+      setGroupError("Impossible de rejoindre la session.");
+      return;
+    }
+    const sb = supabase;
+    const code = joinCodeInput.trim().slice(0, 4);
+    if (code.length !== 4) {
+      setGroupError("Le code doit contenir 4 chiffres.");
+      return;
+    }
+    setGroupError(null);
+    setGroupWaitingMessage("Connexion à la session...");
+    const { data: session, error: sessionError } = await sb
+      .from("group_sessions")
+      .select("code, restaurant_ids")
+      .eq("code", code)
+      .maybeSingle();
+    if (sessionError || !session) {
+      setGroupWaitingMessage(null);
+      setGroupError("Session introuvable.");
+      return;
+    }
+    const restaurantIds = Array.isArray(session.restaurant_ids)
+      ? session.restaurant_ids.map((id: unknown) => Number(id)).filter((id: number) => Number.isInteger(id))
+      : [];
+    const { error: participantError } = await sb.from("group_participants").insert({
+      session_code: code,
+      participant_id: participantId,
+    });
+    if (participantError && !String(participantError.message ?? "").toLowerCase().includes("duplicate")) {
+      setGroupWaitingMessage(null);
+      setGroupError("Impossible de rejoindre la session.");
+      return;
+    }
+    setGroupCode(code);
+    hydrateGroupRestaurants(restaurantIds);
+    setGroupVotes({});
+    setCardIndex(0);
+    setGroupStep("lobby");
+    setGroupWaitingMessage(null);
+  }, [hydrateGroupRestaurants, joinCodeInput, participantId]);
+
+  const startGroupSwipe = useCallback(() => {
+    if (groupRestaurants.length === 0) {
+      setGroupError("Aucun restaurant chargé pour cette session.");
+      return;
+    }
+    setGroupError(null);
+    setCardIndex(0);
+    setGroupStep("swipe");
+  }, [groupRestaurants.length]);
+
+  useEffect(() => {
+    if (!supabase || view !== "group" || !groupCode) return;
+    const sb = supabase;
+    let isActive = true;
+    const bootstrap = async () => {
+      const [{ data: participants }, { data: votes }, { data: session }] = await Promise.all([
+        sb
+          .from("group_participants")
+          .select("participant_id")
+          .eq("session_code", groupCode),
+        sb
+          .from("group_votes")
+          .select("restaurant_id, participant_id")
+          .eq("session_code", groupCode),
+        sb
+          .from("group_sessions")
+          .select("restaurant_ids")
+          .eq("code", groupCode)
+          .maybeSingle(),
+      ]);
+      if (!isActive) return;
+      setGroupReadyCount(participants?.length ?? 0);
+      if (session?.restaurant_ids && Array.isArray(session.restaurant_ids)) {
+        const ids = session.restaurant_ids
+          .map((id: unknown) => Number(id))
+          .filter((id: number) => Number.isInteger(id));
+        hydrateGroupRestaurants(ids);
+      }
+      const nextVotes: Record<number, string[]> = {};
+      for (const vote of votes ?? []) {
+        const restaurantId = Number((vote as { restaurant_id: unknown }).restaurant_id);
+        const voterId = String((vote as { participant_id: unknown }).participant_id ?? "");
+        if (!restaurantId || !voterId) continue;
+        const existing = nextVotes[restaurantId] ?? [];
+        if (!existing.includes(voterId)) nextVotes[restaurantId] = [...existing, voterId];
+      }
+      setGroupVotes(nextVotes);
+    };
+    void bootstrap();
+
+    const channel = sb
+      .channel(`group-session-${groupCode}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_participants", filter: `session_code=eq.${groupCode}` },
+        () => {
+          setGroupReadyCount((count) => count + 1);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_votes", filter: `session_code=eq.${groupCode}` },
+        (payload) => {
+          const row = payload.new as { restaurant_id?: number; participant_id?: string };
+          const restaurantId = Number(row.restaurant_id);
+          const voter = String(row.participant_id ?? "");
+          if (!restaurantId || !voter) return;
+          setGroupVotes((prev) => {
+            const existing = prev[restaurantId] ?? [];
+            if (existing.includes(voter)) return prev;
+            const updated = { ...prev, [restaurantId]: [...existing, voter] };
+            const voteCount = updated[restaurantId].length;
+            if (voteCount >= 2) {
+              const matched = groupRestaurants.find((r) => r.id === restaurantId) ?? null;
+              if (matched) {
+                setGroupMatchRestaurant(matched);
+                setTimeout(() => setGroupMatchRestaurant(null), 2200);
+              }
+            }
+            return updated;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      isActive = false;
+      sb.removeChannel(channel);
+    };
+  }, [groupCode, groupRestaurants, hydrateGroupRestaurants, view]);
 
   useEffect(() => {
     let cancelled = false;
@@ -388,14 +553,23 @@ export default function Home() {
 
   const goNext = () => setCardIndex((i) => i + 1);
 
-  const handleSwipeRight = useCallback(() => {
+  const handleSwipeRight = useCallback(async () => {
     if (!currentRestaurant) return;
     if (isGroupSwipe) {
-      const id = currentRestaurant.id;
-      setGroupVotes((prev) => ({
-        ...prev,
-        [id]: (prev[id] || 0) + groupReadyCount,
-      }));
+      if (!supabase || !participantId || !groupCode) {
+        setGroupError("Session groupe indisponible.");
+        return;
+      }
+      const sb = supabase;
+      const { error } = await sb.from("group_votes").insert({
+        session_code: groupCode,
+        participant_id: participantId,
+        restaurant_id: currentRestaurant.id,
+      });
+      if (error && !String(error.message ?? "").toLowerCase().includes("duplicate")) {
+        console.error("group vote insert:", error);
+        setGroupError("Impossible d'enregistrer ce vote.");
+      }
       goNext();
       return;
     }
@@ -411,7 +585,7 @@ export default function Home() {
       });
     }
     goNext();
-  }, [currentRestaurant, view, isGroupSwipe, groupReadyCount]);
+  }, [currentRestaurant, view, isGroupSwipe, participantId, groupCode]);
 
   const handleSwipeLeft = useCallback(() => {
     goNext();
@@ -786,8 +960,8 @@ export default function Home() {
                   type="button"
                   onClick={() => {
                     setGroupStep("create");
-                    setGroupCode(generateGroupCode());
-                    setGroupReadyCount(1);
+                    setGroupError(null);
+                    void createGroupSession();
                   }}
                   className="flex min-h-[72px] items-center justify-center gap-3 rounded-2xl border border-amber-500/40 bg-white/5 py-4 transition hover:bg-white/10"
                 >
@@ -803,30 +977,7 @@ export default function Home() {
               </motion.div>
             )}
 
-            {groupStep === "create" && groupFiltersOpen && (
-              <motion.div
-                className="flex w-full max-w-[320px] flex-col gap-4 sm:max-w-[360px]"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h2 className="text-center text-lg font-medium text-amber-200/95">
-                  Envies du groupe
-                </h2>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg">
-                  <FilterBar filters={filters} onFilterChange={handleFilterChange} />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setGroupFiltersOpen(false)}
-                  className="w-full rounded-2xl bg-amber-500 py-3.5 font-semibold text-black transition hover:bg-amber-400"
-                >
-                  Valider les filtres
-                </button>
-              </motion.div>
-            )}
-
-            {groupStep === "create" && !groupFiltersOpen && (
+            {groupStep === "create" && (
               <motion.div
                 className="flex w-full max-w-[320px] flex-col items-center gap-6 sm:max-w-[360px]"
                 initial={{ opacity: 0, y: 10 }}
@@ -834,45 +985,8 @@ export default function Home() {
                 transition={{ duration: 0.3 }}
               >
                 <p className="text-center text-white/80">
-                  Partage ce code avec tes amis
+                  Création de la session en cours...
                 </p>
-                <div className="rounded-2xl border-2 border-amber-500/50 bg-black/50 px-8 py-4">
-                  <span className="text-4xl font-bold tracking-[0.4em] text-amber-200">
-                    {groupCode}
-                  </span>
-                </div>
-                <p className="text-sm text-white/60">
-                  {groupReadyCount} personne{groupReadyCount > 1 ? "s" : ""} prête
-                  {groupReadyCount > 1 ? "s" : ""}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setGroupReadyCount((c) => Math.min(c + 1, 4))}
-                  className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10"
-                >
-                  Simuler un ami
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGroupFiltersOpen(true)}
-                  className="w-full rounded-2xl border border-white/20 bg-white/5 py-3.5 font-medium text-white/90 transition hover:bg-white/10"
-                >
-                  Configurer les envies du groupe
-                </button>
-                <div className="w-full space-y-2 text-center">
-                  <p className="text-xs text-white/50">Filtres appliqués</p>
-                  <p className="min-h-[1.25rem] text-sm text-amber-200/90">
-                    {formatFiltersSummary(filters)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  disabled={groupReadyCount < 2}
-                  onClick={() => launchGroupSwipe(groupCode)}
-                  className="w-full rounded-2xl bg-amber-500 py-3.5 font-semibold text-black transition hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  Lancer le swipe
-                </button>
               </motion.div>
             )}
 
@@ -898,19 +1012,44 @@ export default function Home() {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    const code = joinCodeInput || "1000";
-                    setGroupCode(code);
-                    setGroupReadyCount(2);
-                    const sessionFilters = loadGroupSession(code);
-                    if (sessionFilters) setFilters(sessionFilters);
-                    launchGroupSwipe(code, sessionFilters ?? undefined);
-                  }}
+                  onClick={() => { void joinGroupSession(); }}
                   className="w-full rounded-2xl bg-amber-500 py-3.5 font-semibold text-black transition hover:bg-amber-400"
                 >
                   Rejoindre
                 </button>
               </motion.div>
+            )}
+
+            {groupStep === "lobby" && (
+              <motion.div
+                className="flex w-full max-w-[320px] flex-col items-center gap-6 sm:max-w-[360px]"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <p className="text-center text-white/80">Partage ce code avec tes amis</p>
+                <div className="rounded-2xl border-2 border-amber-500/50 bg-black/50 px-8 py-4">
+                  <span className="text-4xl font-bold tracking-[0.4em] text-amber-200">
+                    {groupCode}
+                  </span>
+                </div>
+                <p className="text-sm text-white/60">
+                  {groupReadyCount} personne{groupReadyCount > 1 ? "s" : ""} prête
+                  {groupReadyCount > 1 ? "s" : ""}
+                </p>
+                <button
+                  type="button"
+                  disabled={groupReadyCount < 2}
+                  onClick={startGroupSwipe}
+                  className="w-full rounded-2xl bg-amber-500 py-3.5 font-semibold text-black transition hover:bg-amber-400 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  Lancer le swipe
+                </button>
+              </motion.div>
+            )}
+
+            {groupError && (
+              <p className="mt-4 text-center text-sm text-red-300">{groupError}</p>
             )}
           </section>
         </main>
@@ -990,7 +1129,7 @@ export default function Home() {
               <div className="mx-auto w-full max-w-[340px] space-y-6 sm:max-w-[360px]">
                 {(() => {
                   const withVotes = groupRestaurants
-                    .map((r) => ({ restaurant: r, votes: groupVotes[r.id] || 0 }))
+                    .map((r) => ({ restaurant: r, votes: groupVotes[r.id]?.length || 0 }))
                     .filter(({ votes }) => votes > 0)
                     .sort((a, b) => b.votes - a.votes);
                   if (withVotes.length === 0) {
