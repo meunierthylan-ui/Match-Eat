@@ -133,7 +133,7 @@ function FavoritesMap({
   onOpenDrawer: (restaurant: RestaurantRow) => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-
+  
   useEffect(() => {
     if (!mapRef.current) return;
     const g = (window as any).google;
@@ -141,13 +141,7 @@ function FavoritesMap({
 
     const withCoords = restaurants
       .map((r) => ({ ...r, latitude: Number(r.latitude), longitude: Number(r.longitude) }))
-      .filter(
-        (r) =>
-          r.latitude &&
-          r.longitude &&
-          !Number.isNaN(r.latitude) &&
-          !Number.isNaN(r.longitude),
-      );
+      .filter((r) => r.latitude && r.longitude && !Number.isNaN(r.latitude) && !Number.isNaN(r.longitude));
 
     if (withCoords.length === 0) return;
 
