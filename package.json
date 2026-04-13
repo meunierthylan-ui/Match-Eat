@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
+    "@react-google-maps/api": "^2.20.8",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.99.1",
     "canvas-confetti": "^1.9.4",
