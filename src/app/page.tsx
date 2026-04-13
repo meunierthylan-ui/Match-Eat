@@ -133,40 +133,12 @@ function FavoritesMap({
   onOpenDrawer: (restaurant: RestaurantRow) => void;
 }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any | null>(null);
-  const markersRef = useRef<any[]>([]);
-  const overlaysRef = useRef<any[]>([]);
   const onOpenDrawerRef = useRef(onOpenDrawer);
+  onOpenDrawerRef.current = onOpenDrawer;
 
-  useEffect(() => {
-    onOpenDrawerRef.current = onOpenDrawer;
-  }, [onOpenDrawer]);
-
-  // Initialise la carte une seule fois.
   useEffect(() => {
     const g = (window as any).google;
     if (!g?.maps || !mapRef.current) return;
-    if (mapInstanceRef.current) return;
-
-    mapInstanceRef.current = new g.maps.Map(mapRef.current, {
-      zoom: 13,
-      center: { lat: 48.8566, lng: 2.3522 },
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-    });
-  }, []);
-
-  // Recrée les marqueurs visuels + overlays HTML cliquables à chaque changement de favoris.
-  useEffect(() => {
-    const g = (window as any).google;
-    const map = mapInstanceRef.current;
-    if (!g?.maps || !map) return;
-
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-    overlaysRef.current.forEach((o) => o.setMap(null));
-    overlaysRef.current = [];
 
     const withCoords = restaurants
       .map((r) => ({ ...r, lat: Number(r.latitude), lng: Number(r.longitude) }))
@@ -174,64 +146,30 @@ function FavoritesMap({
 
     if (withCoords.length === 0) return;
 
-    const bounds = new g.maps.LatLngBounds();
-
-    withCoords.forEach((restaurant) => {
-      const position = { lat: restaurant.lat, lng: restaurant.lng };
-
-      // Marqueur visuel classique (sans listener Google).
-      const marker = new g.maps.Marker({
-        map,
-        position,
-        title: restaurant.name,
-      });
-      markersRef.current.push(marker);
-
-      // Overlay HTML cliquable (listener DOM/HTML).
-      const overlay = new g.maps.OverlayView();
-      let el: HTMLButtonElement | null = null;
-
-      overlay.onAdd = () => {
-        el = document.createElement("button");
-        el.type = "button";
-        el.title = restaurant.name;
-        el.className =
-          "absolute -translate-x-1/2 -translate-y-full h-8 w-8 rounded-full border-2 border-white/90 bg-amber-500/80 shadow-md cursor-pointer";
-        el.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onOpenDrawerRef.current(restaurant);
-        });
-        const panes = overlay.getPanes();
-        panes?.overlayMouseTarget.appendChild(el);
-      };
-
-      overlay.draw = () => {
-        if (!el) return;
-        const projection = overlay.getProjection();
-        if (!projection) return;
-        const pixel = projection.fromLatLngToDivPixel(
-          new g.maps.LatLng(restaurant.lat, restaurant.lng),
-        );
-        if (!pixel) return;
-        el.style.left = `${pixel.x}px`;
-        el.style.top = `${pixel.y}px`;
-      };
-
-      overlay.onRemove = () => {
-        if (!el) return;
-        el.remove();
-        el = null;
-      };
-
-      overlay.setMap(map);
-      overlaysRef.current.push(overlay);
-      bounds.extend(position);
+    const map = new g.maps.Map(mapRef.current, {
+      zoom: 13,
+      center: { lat: 48.8566, lng: 2.3522 },
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
     });
 
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds);
-    }
+    const bounds = new g.maps.LatLngBounds();
+
+    withCoords.forEach((r) => {
+      const marker = new g.maps.Marker({
+        map,
+        position: { lat: r.lat, lng: r.lng },
+        title: r.name,
+      });
+      const restaurantData = r;
+      g.maps.event.addListener(marker, "click", function() {
+        onOpenDrawerRef.current(restaurantData);
+      });
+      bounds.extend({ lat: r.lat, lng: r.lng });
+    });
+
+    if (!bounds.isEmpty()) map.fitBounds(bounds);
   }, [restaurants]);
 
   if (restaurants.length === 0) return null;
